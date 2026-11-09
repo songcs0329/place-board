@@ -14,7 +14,9 @@ import { makeNickname, parsePost } from './post-input.js';
 
 @Controller('places/:placeKey/posts')
 export class PostsController {
-  constructor(@Inject(SupabaseClient) private readonly db: SupabaseClient) {}
+  constructor(
+    @Inject(SupabaseClient) private readonly supabase: SupabaseClient,
+  ) {}
 
   @Post()
   async create(
@@ -22,9 +24,10 @@ export class PostsController {
     @Param('placeKey') placeKey: string,
     @Body() input: unknown,
   ) {
-    const { body, tags } = parsePost(input);
+    // ponytail: imagePath가 실제로 업로드됐는지는 확인하지 않음(본인 폴더만 허용하므로 깨진 이미지는 본인 글에만 생김)
+    const { body, tags, images, photoTakenAt } = parsePost(input, user.id);
 
-    const place = await this.db
+    const place = await this.supabase
       .from('places')
       .select('place_key')
       .eq('place_key', placeKey)
@@ -34,7 +37,7 @@ export class PostsController {
 
     // 같은 사용자 3초에 1개 (모든 방 합산)
     // ponytail: 동시에 두 요청이 오면 둘 다 통과할 수 있음. 문제 되면 DB 제약/락으로
-    const last = await this.db
+    const last = await this.supabase
       .from('place_posts')
       .select('created_at')
       .eq('user_id', user.id)
@@ -52,7 +55,7 @@ export class PostsController {
       );
     }
 
-    const { data, error } = await this.db
+    const { data, error } = await this.supabase
       .from('place_posts')
       .insert({
         place_key: placeKey,
@@ -60,6 +63,8 @@ export class PostsController {
         nickname: makeNickname(user.id, placeKey),
         body,
         tags,
+        images,
+        photo_taken_at: photoTakenAt,
       })
       .select()
       .single();

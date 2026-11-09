@@ -39,15 +39,24 @@ export class NaverService {
     return this.get<NaverLocal>('local', { query, display: '5' });
   }
 
-  private async get<T>(path: string, params: Record<string, string>): Promise<T[]> {
+  private async get<T>(
+    path: string,
+    params: Record<string, string>,
+  ): Promise<T[]> {
     for (let attempt = 0; ; attempt++) {
       await this.slot();
-      const res = await fetch(`${this.base}/${path}?${new URLSearchParams(params)}`, {
-        headers: {
-          'X-NCP-APIGW-API-KEY-ID': this.config.getOrThrow<string>('NAVER_CLIENT_ID'),
-          'X-NCP-APIGW-API-KEY': this.config.getOrThrow<string>('NAVER_CLIENT_SECRET'),
+      const res = await fetch(
+        `${this.base}/${path}?${new URLSearchParams(params)}`,
+        {
+          headers: {
+            'X-NCP-APIGW-API-KEY-ID':
+              this.config.getOrThrow<string>('NAVER_CLIENT_ID'),
+            'X-NCP-APIGW-API-KEY': this.config.getOrThrow<string>(
+              'NAVER_CLIENT_SECRET',
+            ),
+          },
         },
-      });
+      );
       if (res.status === 429) {
         // 초당 한도면 1초 뒤 재시도로 풀린다. 재시도도 429면 일·월 한도 차단으로 본다
         if (attempt === 0) {

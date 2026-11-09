@@ -1,6 +1,13 @@
 import { createHash } from 'node:crypto';
 
-const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", apos: "'" };
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  '#39': "'",
+  apos: "'",
+};
 
 // 네이버 결과의 <b> 태그와 HTML 엔티티 제거
 export const clean = (s = '') =>
@@ -10,7 +17,10 @@ export const clean = (s = '') =>
     .trim();
 
 // 태그·공백·특수문자 제거, 소문자
-export const normalize = (s = '') => clean(s).toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+export const normalize = (s = '') =>
+  clean(s)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, '');
 
 // 설계 5장 장소 키: sha1(normalize(title) | normalize(roadAddress || address)) 앞 16자
 export const makePlaceKey = (title: string, address: string) =>

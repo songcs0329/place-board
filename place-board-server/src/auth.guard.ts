@@ -14,7 +14,9 @@ type AuthedRequest = Request & { user?: User };
 // 전역 가드: 모든 API는 Supabase access token 필요 (설계 8장)
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(@Inject(SupabaseClient) private readonly supabase: SupabaseClient) {}
+  constructor(
+    @Inject(SupabaseClient) private readonly supabase: SupabaseClient,
+  ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
@@ -30,5 +32,6 @@ export class AuthGuard implements CanActivate {
 }
 
 export const CurrentUser = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext) => ctx.switchToHttp().getRequest<AuthedRequest>().user!,
+  (_: unknown, ctx: ExecutionContext) =>
+    ctx.switchToHttp().getRequest<AuthedRequest>().user!,
 );

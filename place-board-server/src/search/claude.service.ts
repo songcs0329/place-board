@@ -37,42 +37,65 @@ export class ClaudeService {
   constructor(private readonly config: ConfigService) {}
 
   async blogQueries(query: string): Promise<string[]> {
-    const out = await this.json<{ queries: string[] }>(QUERIES_SYSTEM, `요청: ${query}`, 1000, {
-      type: 'object',
-      properties: { queries: { type: 'array', items: { type: 'string' } } },
-      required: ['queries'],
-      additionalProperties: false,
-    });
-    return out.queries.map((q) => q.trim()).filter(Boolean).slice(0, 5);
+    const out = await this.json<{ queries: string[] }>(
+      QUERIES_SYSTEM,
+      `요청: ${query}`,
+      1000,
+      {
+        type: 'object',
+        properties: { queries: { type: 'array', items: { type: 'string' } } },
+        required: ['queries'],
+        additionalProperties: false,
+      },
+    );
+    return out.queries
+      .map((q) => q.trim())
+      .filter(Boolean)
+      .slice(0, 5);
   }
 
-  async extractPlaces(query: string, blogs: BlogForPrompt[]): Promise<Candidate[]> {
-    const list = blogs.map((b) => `[${b.id}] ${b.title} | ${b.description}`).join('\n');
-    const out = await this.json<{ places: Candidate[] }>(EXTRACT_SYSTEM, `요청: ${query}\n\n후기:\n${list}`, 4000, {
-      type: 'object',
-      properties: {
-        places: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              area: { type: 'string' },
-              summary: { type: 'string' },
-              blogIds: { type: 'array', items: { type: 'integer' } },
+  async extractPlaces(
+    query: string,
+    blogs: BlogForPrompt[],
+  ): Promise<Candidate[]> {
+    const list = blogs
+      .map((b) => `[${b.id}] ${b.title} | ${b.description}`)
+      .join('\n');
+    const out = await this.json<{ places: Candidate[] }>(
+      EXTRACT_SYSTEM,
+      `요청: ${query}\n\n후기:\n${list}`,
+      4000,
+      {
+        type: 'object',
+        properties: {
+          places: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                area: { type: 'string' },
+                summary: { type: 'string' },
+                blogIds: { type: 'array', items: { type: 'integer' } },
+              },
+              required: ['name', 'area', 'summary', 'blogIds'],
+              additionalProperties: false,
             },
-            required: ['name', 'area', 'summary', 'blogIds'],
-            additionalProperties: false,
           },
         },
+        required: ['places'],
+        additionalProperties: false,
       },
-      required: ['places'],
-      additionalProperties: false,
-    });
+    );
     return out.places.slice(0, 15);
   }
 
-  private async json<T>(system: string, user: string, maxTokens: number, schema: Record<string, unknown>): Promise<T> {
+  private async json<T>(
+    system: string,
+    user: string,
+    maxTokens: number,
+    schema: Record<string, unknown>,
+  ): Promise<T> {
     const res = await this.client.messages.create({
       model: this.config.getOrThrow<string>('CLAUDE_MODEL'),
       max_tokens: maxTokens,
@@ -81,7 +104,8 @@ export class ClaudeService {
       output_config: { format: { type: 'json_schema', schema }, effort: 'low' },
     });
     const text = res.content.find((b) => b.type === 'text');
-    if (res.stop_reason !== 'end_turn' || !text) throw new Error(`claude stop_reason=${res.stop_reason}`);
+    if (res.stop_reason !== 'end_turn' || !text)
+      throw new Error(`claude stop_reason=${res.stop_reason}`);
     return JSON.parse(text.text) as T;
   }
 }

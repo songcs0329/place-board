@@ -1,18 +1,49 @@
 import { BadRequestException } from '@nestjs/common';
 import { makeNickname, parsePost } from './post-input.js';
 
+const ME = '11111111-1111-1111-1111-111111111111';
+const OTHER = '22222222-2222-2222-2222-222222222222';
+const FILE = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.webp';
+const NOW = Date.parse('2026-11-09T05:00:00.000Z');
+const HOUR = 3600_000;
+
 describe('parsePost', () => {
   it('공백 글은 null, 태그 중복 제거', () => {
-    expect(parsePost({ body: '  ', tags: ['seat:free', 'seat:free'] })).toEqual(
-      { body: null, tags: ['seat:free'] },
-    );
+    expect(
+      parsePost({ body: '  ', tags: ['seat:free', 'seat:free'] }, ME),
+    ).toEqual({
+      body: null,
+      tags: ['seat:free'],
+      images: [],
+      photoTakenAt: null,
+    });
   });
 
   it('글만 있어도 됨 (채팅)', () => {
-    expect(parsePost({ body: ' 창가 비었어요 ' })).toEqual({
+    expect(parsePost({ body: ' 창가 비었어요 ' }, ME)).toMatchObject({
       body: '창가 비었어요',
       tags: [],
+      images: [],
     });
+  });
+
+  it('사진만 있어도 됨, 촬영 시각 저장', () => {
+    const taken = new Date(NOW - HOUR).toISOString();
+    expect(
+      parsePost({ imagePath: `${ME}/${FILE}`, photoTakenAt: taken }, ME, NOW),
+    ).toEqual({
+      body: null,
+      tags: [],
+      images: [`${ME}/${FILE}`],
+      photoTakenAt: taken,
+    });
+  });
+
+  it('사진 없이 온 촬영 시각은 버린다', () => {
+    expect(
+      parsePost({ body: 'a', photoTakenAt: new Date(NOW).toISOString() }, ME)
+        .photoTakenAt,
+    ).toBeNull();
   });
 
   it.each<[unknown, string]>([
@@ -22,8 +53,19 @@ describe('parsePost', () => {
     [{ body: 1 }, 'body 타입'],
     [{ tags: 'seat:free' }, 'tags 타입'],
     [null, 'body 없음'],
+    [{ imagePath: `${OTHER}/${FILE}` }, '남의 폴더'],
+    [{ imagePath: `${ME}/../${OTHER}/${FILE}` }, '경로 조작'],
+    [{ imagePath: `${ME}/${FILE}.png` }, '확장자'],
+    [
+      {
+        imagePath: `${ME}/${FILE}`,
+        photoTakenAt: new Date(NOW - 4 * HOUR).toISOString(),
+      },
+      '3시간 넘은 사진',
+    ],
+    [{ imagePath: `${ME}/${FILE}`, photoTakenAt: 'yesterday' }, '날짜 형식'],
   ])('400: %j (%s)', (input) => {
-    expect(() => parsePost(input)).toThrow(BadRequestException);
+    expect(() => parsePost(input, ME, NOW)).toThrow(BadRequestException);
   });
 });
 

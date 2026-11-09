@@ -2,7 +2,9 @@ import { clean, makePlaceKey, normalize, sameName } from './text.js';
 
 describe('text', () => {
   it('clean: <b> 태그와 엔티티 제거', () => {
-    expect(clean('<b>숲결</b> 카페 &amp; 베이커리 &quot;2층&quot;')).toBe('숲결 카페 & 베이커리 "2층"');
+    expect(clean('<b>숲결</b> 카페 &amp; 베이커리 &quot;2층&quot;')).toBe(
+      '숲결 카페 & 베이커리 "2층"',
+    );
   });
 
   it('normalize: 공백·특수문자 제거, 소문자', () => {

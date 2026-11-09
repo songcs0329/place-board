@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import Composer from '@/components/Composer';
 import { usePlace } from '@/hooks/usePlace';
 import { usePlaceChannel, usePosts } from '@/hooks/usePosts';
+import { photoUrl } from '@/libs/photo';
 import { tagLabel } from '@/libs/tags';
 import { cn } from '@/libs/utils/cn';
 import { ageMs, HOUR, timeAgo } from '@/libs/utils/time';
@@ -79,27 +80,46 @@ function Board() {
               아직 소식이 없어요 · 태그 하나로 첫 소식을 남겨주세요
             </p>
           )}
-          {memos.map((m) => (
+          {memos.map((memo) => (
             <article
-              key={m.id}
+              key={memo.id}
               // 6시간 지난 글은 흐리게 (설계 4.3)
               className={cn(
                 'flex flex-col gap-1.5 rounded-2xl border border-stone-200 bg-white px-3.5 py-3',
-                ageMs(m.created_at) > 6 * HOUR && 'opacity-50',
+                ageMs(memo.created_at) > 6 * HOUR && 'opacity-50',
               )}
             >
               <div className="flex justify-between text-xs text-stone-500">
-                <span>{m.nickname}</span>
-                <time dateTime={m.created_at}>{timeAgo(m.created_at)}</time>
+                <span>{memo.nickname}</span>
+                <time dateTime={memo.created_at}>{timeAgo(memo.created_at)}</time>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {m.tags.map((t) => (
-                  <span key={t} className="rounded-full bg-[#EAF2EC] px-2 py-0.5 text-xs font-medium text-[#24543D]">
-                    {tagLabel(t)}
-                  </span>
-                ))}
-              </div>
-              {m.body && <p className="text-sm whitespace-pre-wrap">{m.body}</p>}
+              {memo.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {memo.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-[#EAF2EC] px-2 py-0.5 text-xs font-medium text-[#24543D]"
+                    >
+                      {tagLabel(tag)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {memo.body && <p className="text-sm whitespace-pre-wrap">{memo.body}</p>}
+              {memo.images[0] && (
+                <figure className="flex flex-col gap-1">
+                  <img
+                    src={photoUrl(memo.images[0])}
+                    alt={`${memo.nickname}님이 올린 현장 사진`}
+                    loading="lazy"
+                    className="max-h-80 w-full rounded-xl bg-stone-100 object-cover"
+                  />
+                  {/* 촬영 시각이 없으면 표시 생략 (설계 7장) */}
+                  {memo.photo_taken_at && (
+                    <figcaption className="text-[11px] text-stone-500">촬영 {timeAgo(memo.photo_taken_at)}</figcaption>
+                  )}
+                </figure>
+              )}
             </article>
           ))}
         </section>

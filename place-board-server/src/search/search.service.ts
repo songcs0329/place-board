@@ -40,7 +40,11 @@ export class SearchService {
   ) {}
 
   async search(userId: string, query: string) {
-    if (this.running.has(userId)) throw new HttpException({ code: 'IN_PROGRESS' }, HttpStatus.TOO_MANY_REQUESTS);
+    if (this.running.has(userId))
+      throw new HttpException(
+        { code: 'IN_PROGRESS' },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     this.running.add(userId);
     try {
       await this.checkLimit(userId);
@@ -59,7 +63,10 @@ export class SearchService {
       .gte('created_at', since);
     if (error) throw error;
     if ((count ?? 0) >= DAILY_SEARCH_LIMIT) {
-      throw new HttpException({ code: 'USER_LIMIT', limit: DAILY_SEARCH_LIMIT }, HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        { code: 'USER_LIMIT', limit: DAILY_SEARCH_LIMIT },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
   }
 
@@ -83,33 +90,66 @@ export class SearchService {
     // ③ 가게 추출 (글 번호는 1부터)
     const candidates = await this.claude.extractPlaces(
       query,
-      blogs.map((b, i) => ({ id: i + 1, title: b.title, description: b.snippet })),
+      blogs.map((b, i) => ({
+        id: i + 1,
+        title: b.title,
+        description: b.snippet,
+      })),
     );
 
     // ④ 캐시 → 지역 검색으로 검증 (한도 초과면 NaverQuotaError로 검색 전체 실패)
-    const resolved = await Promise.all(candidates.map(async (c) => ({ c, row: await this.resolve(c) })));
+    const resolved = await Promise.all(
+      candidates.map(async (c) => ({ c, row: await this.resolve(c) })),
+    );
 
-    const byKey = new Map<string, ReturnType<typeof toPlace> & { summary: string; blogs: Blog[] }>();
-    const unmatched: { name: string; area: string; summary: string; blogs: Blog[] }[] = [];
+    const byKey = new Map<
+      string,
+      ReturnType<typeof toPlace> & { summary: string; blogs: Blog[] }
+    >();
+    const unmatched: {
+      name: string;
+      area: string;
+      summary: string;
+      blogs: Blog[];
+    }[] = [];
     for (const { c, row } of resolved) {
-      const cBlogs = c.blogIds.map((id) => blogs[id - 1]).filter((b): b is Blog => !!b);
+      const cBlogs = c.blogIds
+        .map((id) => blogs[id - 1])
+        .filter((b): b is Blog => !!b);
       if (!row) {
-        unmatched.push({ name: c.name, area: c.area, summary: c.summary, blogs: cBlogs });
+        unmatched.push({
+          name: c.name,
+          area: c.area,
+          summary: c.summary,
+          blogs: cBlogs,
+        });
         continue;
       }
       const existing = byKey.get(row.place_key);
       if (existing) {
         // 서로 다른 후보가 같은 가게로 확인되면 후기를 합친다
-        for (const b of cBlogs) if (!existing.blogs.some((x) => x.link === b.link)) existing.blogs.push(b);
+        for (const b of cBlogs)
+          if (!existing.blogs.some((x) => x.link === b.link))
+            existing.blogs.push(b);
       } else {
-        byKey.set(row.place_key, { ...toPlace(row), summary: c.summary, blogs: cBlogs });
+        byKey.set(row.place_key, {
+          ...toPlace(row),
+          summary: c.summary,
+          blogs: cBlogs,
+        });
       }
     }
-    const places = [...byKey.values()].sort((a, b) => b.blogs.length - a.blogs.length);
+    const places = [...byKey.values()].sort(
+      (a, b) => b.blogs.length - a.blogs.length,
+    );
 
     const { error } = await this.db
       .from('search_sessions')
-      .insert({ user_id: userId, query, place_keys: places.map((p) => p.placeKey) });
+      .insert({
+        user_id: userId,
+        query,
+        place_keys: places.map((p) => p.placeKey),
+      });
     if (error) throw error;
 
     return { query, places, unmatched };
@@ -123,11 +163,17 @@ export class SearchService {
   private async findCached(c: Candidate): Promise<PlaceRow | null> {
     const term = c.name.replace(/[%_,()\\]/g, '').trim();
     if (term.length < 2) return null;
-    const { data, error } = await this.db.from('places').select('*').ilike('name', `%${term}%`).limit(10);
+    const { data, error } = await this.db
+      .from('places')
+      .select('*')
+      .ilike('name', `%${term}%`)
+      .limit(10);
     if (error) throw error;
     return (
       (data as PlaceRow[]).find(
-        (p) => sameName(p.name, c.name) && `${p.address ?? ''} ${p.road_address ?? ''}`.includes(c.area),
+        (p) =>
+          sameName(p.name, c.name) &&
+          `${p.address ?? ''} ${p.road_address ?? ''}`.includes(c.area),
       ) ?? null
     );
   }
@@ -150,7 +196,10 @@ export class SearchService {
     };
     const { error } = await this.db
       .from('places')
-      .upsert({ ...row, updated_at: new Date().toISOString() }, { onConflict: 'place_key' });
+      .upsert(
+        { ...row, updated_at: new Date().toISOString() },
+        { onConflict: 'place_key' },
+      );
     if (error) throw error;
     return row;
   }

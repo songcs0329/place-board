@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthGuard } from './auth.guard.js';
+import { CleanupService } from './cleanup.service.js';
 import { PostsController } from './posts/posts.controller.js';
 import { ClaudeService } from './search/claude.service.js';
 import { NaverService } from './search/naver.service.js';
@@ -19,6 +20,7 @@ import { supabaseProvider } from './supabase.js';
     NaverService,
     ClaudeService,
     SearchService,
+    CleanupService,
   ],
 })
 export class AppModule {}

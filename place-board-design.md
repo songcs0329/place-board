@@ -234,9 +234,9 @@ makeNickname(userId, placeKey) → "우드톤 고양이 12"
 | 항목 | 처리 |
 | --- | --- |
 | 위치 정보 | 업로드 전에 canvas로 다시 그려 EXIF(GPS 포함)를 전부 제거 |
-| 용량 | 긴 변 1280px, WebP 품질 0.8 |
-| 촬영 시각 | EXIF 제거 전에 `DateTimeOriginal`만 읽어서 저장 |
-| 오래된 사진 | 촬영 시각이 3시간 이상 지났으면 업로드 막기 |
+| 용량 | 긴 변 1280px, WebP 품질 0.8. 브라우저가 WebP 인코딩을 못 하면(canvas가 PNG를 돌려줌) JPEG 0.8. 버킷은 2MB, webp·jpeg만 허용 |
+| 촬영 시각 | EXIF 제거 전에 `DateTimeOriginal`만 읽어서 저장 (JPEG만, 라이브러리 없이 `src/libs/exif.ts`). EXIF에는 시간대가 없어 기기 시간대로 본다 |
+| 오래된 사진 | 촬영 시각이 3시간 이상 지났으면 업로드 막기 (프론트, 서버 모두 확인) |
 | 촬영 시각 없음 | 허용하되 "촬영 시각" 표시 생략 |
 | 카메라 | `<input type="file" accept="image/*" capture="environment">` |
 | 다른 손님 얼굴 | 업로드 화면에 "다른 사람 얼굴이 나오지 않게 찍어주세요" 안내 |
@@ -450,6 +450,8 @@ alter publication supabase_realtime add table public.place_posts;
 1. 24시간 지난 글 조회 → 사진 경로 모아서 Storage에서 삭제 → 글 삭제
 2. 6시간 지난 채팅(`kind = 'chat'`) 삭제
 3. 24시간 지난 검색 기록 삭제
+
+업로드는 됐지만 글쓰기가 실패한 사진(고아 파일)은 지우지 않는다. 쌓이면 Storage 목록을 훑어 24시간 지난 고아 파일을 지우는 단계를 추가한다.
 
 ## 13. 환경 변수
 

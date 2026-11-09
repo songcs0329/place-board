@@ -6,7 +6,11 @@ export const supabaseProvider = {
   provide: SupabaseClient,
   inject: [ConfigService],
   useFactory: (config: ConfigService) =>
-    createClient(config.getOrThrow('SUPABASE_URL'), config.getOrThrow('SUPABASE_SERVICE_ROLE_KEY'), {
-      auth: { persistSession: false, autoRefreshToken: false },
-    }),
+    createClient(
+      config.getOrThrow('SUPABASE_URL'),
+      config.getOrThrow('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
+    ),
 };
