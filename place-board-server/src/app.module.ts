@@ -14,8 +14,18 @@ import { SearchService } from './search/search.service.js';
 import { SummaryController } from './summary/summary.controller.js';
 import { supabaseProvider } from './supabase.js';
 
+// 환경별 .env: production이면 .env.production, 그 밖(개발, 테스트)은 .env.development
+// 호스팅 대시보드(Railway)에 넣은 환경 변수가 파일보다 우선한다
+const environmentFile =
+  process.env.NODE_ENV === 'production'
+    ? '.env.production'
+    : '.env.development';
+
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), ScheduleModule.forRoot()],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: environmentFile }),
+    ScheduleModule.forRoot(),
+  ],
   controllers: [
     SearchController,
     PostsController,

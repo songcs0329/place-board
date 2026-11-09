@@ -77,6 +77,8 @@
 | `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET` | Railway | 운영 전용 키 |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Railway | 운영 Project URL / secret 키 |
 
+로컬 파일은 환경별로 나눈다: 프론트 `.env.development` · `.env.production` (Vite 모드), 서버 `.env.development` · `.env.production` (`NODE_ENV`). 배포 환경에서는 대시보드 값이 파일보다 우선하고, `.env.*` 파일은 git에 올라가지 않는다.
+
 `VITE_*`는 빌드할 때 번들에 박히므로 값을 바꾸면 프론트를 다시 배포해야 한다. secret 키는 Vercel에 절대 넣지 않는다.
 
 ## 5. 공개 전에 남은 작업

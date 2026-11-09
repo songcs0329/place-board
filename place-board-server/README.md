@@ -7,16 +7,19 @@
 ## 실행
 
 ```bash
-cp .env.example .env   # 아래 환경 변수 채우기
+cp .env.development.example .env.development   # 개발용 값 채우기
+cp .env.production.example .env.production     # (선택) 로컬에서 운영 모드로 띄울 때
 npm install
 npm run start:dev      # http://localhost:4000 (코드를 바꾸면 자동 재시작)
 ```
 
 ## 환경 변수
 
+`NODE_ENV`에 따라 파일을 고른다: `production`이면 `.env.production` (`npm run start:prod`), 그 밖(개발, 테스트)은 `.env.development`. Railway 대시보드에 넣은 값이 파일보다 우선한다. 실제 값이 든 `.env.*` 파일은 git에서 제외되고, `*.example`만 커밋한다.
+
 | 이름 | 값 |
 | --- | --- |
-| `PORT` | 기본 `4000` |
+| `PORT` | 기본 `4000`. Railway에서는 도메인 대상 포트와 같은 `4000`으로 넣는다 |
 | `WEB_ORIGIN` | CORS 허용 출처 (프론트 주소, 예: `http://localhost:5173`) |
 | `ANTHROPIC_API_KEY` | Claude API 키. 이 서비스 전용 워크스페이스와 지출 한도를 걸어두는 것을 권장 |
 | `CLAUDE_MODEL` | 기본 `claude-sonnet-5-5` |
@@ -53,7 +56,7 @@ npm run start:dev      # http://localhost:4000 (코드를 바꾸면 자동 재�
 | --- | --- |
 | `npm run start:dev` | 개발 서버 (watch) |
 | `npm run build` | `dist/`로 빌드 |
-| `npm run start:prod` | `node dist/main` |
+| `npm run start:prod` | `NODE_ENV=production node dist/main` |
 | `npm test` | 단위 테스트 (장소 키·텍스트 정규화, 글 입력 검증·닉네임, 요약 재생성 규칙, 인증 가드) |
 | `npm run test:e2e` | 토큰 없이 요청하면 401인지 |
 | `npm run lint` | oxlint |

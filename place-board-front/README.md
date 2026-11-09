@@ -7,7 +7,8 @@
 ## 실행
 
 ```bash
-cp .env.example .env   # 아래 환경 변수 채우기
+cp .env.development.example .env.development   # 개발용 값 채우기
+cp .env.production.example .env.production     # (선택) 로컬에서 운영 빌드할 때
 npm install
 npm run dev            # http://localhost:5173
 ```
@@ -15,6 +16,8 @@ npm run dev            # http://localhost:5173
 서버(`../place-board-server`)를 먼저 띄워야 검색·글쓰기·요약이 동작한다.
 
 ## 환경 변수
+
+환경별 파일을 Vite가 모드에 따라 읽는다: `npm run dev` → `.env.development`, `npm run build` → `.env.production`. Vercel 대시보드에 넣은 값이 파일보다 우선한다. 실제 값이 든 `.env.*` 파일은 git에서 제외되고, `*.example`만 커밋한다.
 
 | 이름 | 값 |
 | --- | --- |

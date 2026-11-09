@@ -12,10 +12,9 @@ dist
 dist-ssr
 *.local
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+# Environment variables (환경별 .env.development · .env.production 모두 제외, 예시만 커밋)
+.env*
+!.env*.example
 
 # Editor directories and files
 .vscode

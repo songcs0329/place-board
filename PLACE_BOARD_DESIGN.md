@@ -475,6 +475,8 @@ create policy "upload to own folder" on storage.objects
 
 ## 13. 환경 변수
 
+환경별 파일로 나눈다. 프론트는 Vite 모드(`npm run dev` → `.env.development`, `npm run build` → `.env.production`), 서버는 `NODE_ENV`(`production`이면 `.env.production`, 그 밖은 `.env.development`). 배포 환경에서는 Vercel·Railway 대시보드 값이 우선하고, 실제 값이 든 `.env.*`는 git에서 제외한다(예시 `*.example`만 커밋).
+
 ### 백엔드
 
 ```
