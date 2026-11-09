@@ -215,6 +215,15 @@ placeKey = sha1(normalize(title) + '|' + normalize(roadAddress || address)).slic
 makeNickname(userId, placeKey) → "우드톤 고양이 12"
 ```
 
+### 신고·차단
+
+- 글마다 "⋯" 메뉴(아래에서 올라오는 시트)에서 신고하기, 이 사람 글 숨기기(차단)를 고른다.
+- 신고 사유: 스팸·홍보, 욕설·혐오, 개인정보 노출, 기타. 신고한 사람에게는 그 글이 바로 숨겨지고, 서로 다른 3명이 신고하면 모두에게 숨긴다(`hidden_at`). 관리자 화면이 없어서 자동 처리한다.
+- 차단하면 그 작성자의 글이 모든 장소에서 나에게만 안 보인다. 닉네임이 방마다 달라서 같은 사람인지 알 수 없으므로 장소 구분 없이 막는다.
+- 화면은 작성자 user_id를 모르므로 글 id로 요청하고, 작성자는 서버가 찾는다. 신고·차단 기록(`post_reports`, `user_blocks`)도 user_id가 들어 있어 클라이언트에 권한을 주지 않는다.
+- 숨김은 글 읽기 RLS가 처리한다: `hidden_at is null` + `can_see_post(user_id, id)`(security definer, 차단·내 신고 확인). 그래서 검색 카드 배지, 실시간 게시판 탭에도 똑같이 적용된다. AI 요약은 신고로 숨겨진 글을 뺀다(요약은 모든 사람이 같이 보므로 개인 차단은 반영하지 않는다).
+- 내 글은 신고·차단할 수 없다(400). 차단 해제는 아직 없다. 필요하면 설정 화면과 함께 추가한다.
+
 ### 제한
 
 - 글 300자
@@ -434,6 +443,10 @@ create policy "upload to own folder" on storage.objects
 | 없는 장소 | 404 |
 | 3초 안에 연속 전송 (모든 방 합산) | 429 `{ "code": "TOO_FAST" }` |
 
+### `POST /posts/:postId/report`, `POST /posts/:postId/block-author`
+
+신고는 `{ "reason": "spam" | "abuse" | "privacy" | "etc" }`. 둘 다 성공하면 204. 알 수 없는 사유·내 글이면 400, 없는 글이면 404.
+
 ### `GET /places/:placeKey/summary`
 
 ```json
@@ -446,7 +459,7 @@ create policy "upload to own folder" on storage.objects
 
 | 용도 | 방식 |
 | --- | --- |
-| 장소 게시판 새 글 | 비공개 채널 `place:{key}`의 Broadcast `post` 이벤트. 백엔드가 글 저장 후 user_id를 뺀 글을 보낸다 |
+| 장소 게시판 새 글 | 비공개 채널 `place:{key}`의 Broadcast `post` 이벤트. 백엔드는 글 저장 후 `{ id, place_key, kind }`만 보내고, 받는 쪽이 id로 다시 조회한다. 그래야 RLS가 차단·신고한 글을 걸러준다 |
 | 실시간 게시판 탭 새 메모 | 검색한 장소마다 같은 `place:{key}` 채널을 구독하고, 받은 뒤 `kind = 'memo'`만 표시 |
 | 보는 사람 수 | Presence, 채널 `place:{key}` |
 
@@ -496,7 +509,6 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 15. 다음 단계
 
-- 신고·차단: 메시지 단위 신고, 사용자 차단 목록. 실제 사용자가 생기면 가장 먼저 필요하다.
 - 업주 홍보 글 규칙 또는 업주 공식 계정
 - Claude 비전으로 사진 보고 태그 추천 + 부적절 이미지 1차 필터
 - 장소 카드와 게시판에 네이버 지도 표시 (좌표는 이미 저장됨)

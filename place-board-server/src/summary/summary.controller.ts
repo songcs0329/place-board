@@ -63,6 +63,7 @@ export class SummaryController {
       .eq('place_key', placeKey)
       .gte('created_at', new Date(now - 6 * HOUR).toISOString())
       .order('created_at', { ascending: false })
+      .is('hidden_at', null) // 신고로 숨겨진 글은 요약에서 뺀다
       .limit(50);
     if (posts.error) throw posts.error;
     const rows = posts.data as PostRow[];

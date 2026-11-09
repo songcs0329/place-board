@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchVisiblePost, type PostNotice } from '@/hooks/usePosts';
 import { supabase } from '@/libs/supabase';
 import { HOUR } from '@/libs/utils/time';
 
@@ -42,18 +43,21 @@ export function useMemoFeed(placeKeys: string[]) {
   useEffect(() => {
     if (!joinedKeys) return;
     const keys = joinedKeys.split(',');
-    const onPost = ({ payload }: { payload: Db.Post }) => {
-      if (payload.kind !== 'memo') return;
-      const { body, tags, images, created_at } = payload;
+    // 알림은 id만 오므로 메모일 때만 다시 조회한다. 차단·신고로 안 보여야 하면 RLS가 걸러서 null
+    const onPost = async (notice: PostNotice) => {
+      if (notice.kind !== 'memo') return;
+      const post = await fetchVisiblePost(notice.id).catch(() => null);
+      if (!post) return;
+      const { body, tags, images, created_at } = post;
       queryClient.setQueryData<Record<string, LatestMemo>>(latestMemosKey(keys), (previous = {}) => ({
         ...previous,
-        [payload.place_key]: { body, tags, images, created_at, photo: images[0] ?? previous[payload.place_key]?.photo },
+        [post.place_key]: { body, tags, images, created_at, photo: images[0] ?? previous[post.place_key]?.photo },
       }));
     };
     const channels = keys.map((placeKey) =>
       supabase
         .channel(`place:${placeKey}`, { config: { private: true } })
-        .on('broadcast', { event: 'post' }, (message) => onPost({ payload: message.payload as Db.Post }))
+        .on('broadcast', { event: 'post' }, (message) => void onPost(message.payload as PostNotice))
         .subscribe(),
     );
     return () => {

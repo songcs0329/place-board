@@ -5,6 +5,7 @@ import 'swiper/css';
 import Composer from '@/components/places/Composer';
 import TagBadge from '@/components/commons/TagBadge';
 import PhotoPreview, { type PreviewPhoto } from '@/components/places/PhotoPreview';
+import PostActions from '@/components/places/PostActions';
 import { useGetSummary } from '@/hooks/useGetSummary';
 import { usePlace } from '@/hooks/usePlace';
 import { usePlaceChannel, usePosts } from '@/hooks/usePosts';
@@ -25,6 +26,7 @@ function Places() {
   const viewers = usePlaceChannel(placeKey);
   const summary = useGetSummary(placeKey, posts.data?.length ?? 0);
   const [previewPhoto, setPreviewPhoto] = useState<PreviewPhoto | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (place.isPending) return null;
   if (!place.data) {
@@ -80,6 +82,11 @@ function Places() {
             글을 불러오지 못했어요.
           </p>
         )}
+        {notice && (
+          <p role="status" className="rounded-xl bg-neutral-200 px-3.5 py-2.5 text-[13px] text-neutral-800">
+            {notice}
+          </p>
+        )}
 
         {/* AI 현장 요약: 글이 없거나 요약 실패면 띄우지 않는다 (설계 6장) */}
         {summary.data?.summary && (
@@ -107,7 +114,11 @@ function Places() {
             >
               {memos.map((memo) => (
                 <SwiperSlide key={memo.id} className="h-auto!">
-                  <MemoCard memo={memo} onPhotoClick={setPreviewPhoto} />
+                  <MemoCard
+                    memo={memo}
+                    onPhotoClick={setPreviewPhoto}
+                    actions={<PostActions postId={memo.id} placeKey={placeKey} onNotice={setNotice} />}
+                  />
                 </SwiperSlide>
               ))}
             </Swiper>
@@ -129,9 +140,12 @@ function Places() {
           {chats.length === 0 && <p className="text-[13px] text-neutral-500">아직 대화가 없어요</p>}
           {chats.map((chat) => (
             <div key={chat.id} className="flex flex-col items-start gap-0.5">
-              <span className="text-[11px] text-neutral-500">
-                {chat.nickname} · {timeAgo(chat.created_at)}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-neutral-500">
+                  {chat.nickname} · {timeAgo(chat.created_at)}
+                </span>
+                <PostActions postId={chat.id} placeKey={placeKey} onNotice={setNotice} />
+              </div>
               <p className="max-w-[80%] rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm whitespace-pre-wrap">
                 {chat.body}
               </p>
@@ -146,7 +160,13 @@ function Places() {
   );
 }
 
-function MemoCard({ memo, onPhotoClick }: { memo: Db.Post; onPhotoClick: (photo: PreviewPhoto) => void }) {
+interface MemoCardProps {
+  memo: Db.Post;
+  onPhotoClick: (photo: PreviewPhoto) => void;
+  actions: React.ReactNode;
+}
+
+function MemoCard({ memo, onPhotoClick, actions }: MemoCardProps) {
   const photo = memo.images[0] && {
     src: photoUrl(memo.images[0]),
     alt: `${memo.nickname}님이 올린 현장 사진`,
@@ -161,9 +181,12 @@ function MemoCard({ memo, onPhotoClick }: { memo: Db.Post; onPhotoClick: (photo:
         ageMs(memo.created_at) > 6 * HOUR && 'opacity-50',
       )}
     >
-      <div className="flex justify-between text-xs text-neutral-500">
+      <div className="flex items-center justify-between gap-2 text-xs text-neutral-500">
         <span>{memo.nickname}</span>
-        <time dateTime={memo.created_at}>{timeAgo(memo.created_at)}</time>
+        <div className="flex items-center gap-1">
+          <time dateTime={memo.created_at}>{timeAgo(memo.created_at)}</time>
+          {actions}
+        </div>
       </div>
       {memo.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">

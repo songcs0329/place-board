@@ -77,11 +77,16 @@ export class PostsController {
       .single();
     if (error) throw error;
 
-    await this.broadcast(placeKey, data);
+    // 글 내용 대신 id만 보낸다: 받는 쪽이 id로 다시 조회해야 RLS가 차단·신고한 글을 걸러준다
+    await this.broadcast(placeKey, {
+      id: data.id,
+      place_key: data.place_key,
+      kind: data.kind,
+    });
     return data;
   }
 
-  // 새 글 실시간 전송 (설계 11장): user_id를 뺀 글을 비공개 채널 place:{key}로.
+  // 새 글 알림 (설계 11장): 글 id·장소·종류만 비공개 채널 place:{key}로.
   // 받는 쪽은 Realtime 정책으로 로그인 사용자만, 보내는 쪽은 서버(service role)만
   // 전송이 실패해도 글은 이미 저장됐으므로 요청은 성공시키고, 화면은 다음 조회 때 맞춰진다
   private async broadcast(placeKey: string, post: unknown) {

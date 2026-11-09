@@ -7,6 +7,9 @@ const apiManager = {
     restClient.post<Db.Post>(`/places/${encodeURIComponent(placeKey)}/posts`, input),
   getSummary: (placeKey: string) =>
     restClient.get<ApiResponse.Summary>(`/places/${encodeURIComponent(placeKey)}/summary`),
+  reportPost: (postId: number, reason: ApiRequest.ReportReason) =>
+    restClient.post<void>(`/posts/${postId}/report`, { reason }),
+  blockAuthor: (postId: number) => restClient.post<void>(`/posts/${postId}/block-author`),
 };
 
 export default apiManager;
