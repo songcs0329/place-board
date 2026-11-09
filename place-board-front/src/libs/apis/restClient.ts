@@ -1,7 +1,15 @@
 import axios from 'axios';
+import { supabase } from '@/libs/supabase';
 
 const api = axios.create({
   baseURL: '/api',
+});
+
+// 백엔드는 모든 API에서 Supabase access token을 검증한다
+api.interceptors.request.use(async (config) => {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) config.headers.Authorization = `Bearer ${data.session.access_token}`;
+  return config;
 });
 
 const restClient = {

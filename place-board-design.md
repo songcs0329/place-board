@@ -16,7 +16,7 @@
 - 검색 결과 탭: 지역 검색 + 블로그 후기를 합친 장소 카드
 - 실시간 게시판 탭: 내가 검색한 장소의 현재 소식만
 - 장소 게시판: 현장 메모 + 채팅, 사진 1장
-- 카카오 로그인 (이메일 미수집)
+- 카카오 로그인 필수 (이메일은 선택 동의, 서비스에서 사용 안 함)
 - Claude 기반 현장 요약
 
 ### 제외
@@ -54,6 +54,8 @@
 ## 4. 화면 구성
 
 ```
+                 [로그인] 카카오로 시작하기
+                            ↓
 [검색 결과] 탭                    [실시간 게시판] 탭
   검색창                            최근 검색어별 묶음
   장소 카드 목록                      장소 목록 (글 있는 곳 최신순, 빈 곳 아래)
@@ -64,6 +66,12 @@
                       채팅 (보는 사람 N명)
                       입력창 + 빠른 태그 + 사진
 ```
+
+### 4.0 로그인
+
+- 로그인하지 않은 사용자는 어느 경로로 들어와도 로그인 화면으로 보낸다.
+- 로그인 화면은 서비스 한 줄 소개와 "카카오로 시작하기" 버튼만 둔다.
+- 로그인이 끝나면 원래 가려던 경로로 돌려보낸다. 공유 링크로 장소 게시판에 바로 들어온 경우에도 그 게시판으로 돌아간다.
 
 ### 4.1 검색 결과 탭
 
@@ -92,8 +100,9 @@
 
 - 최근 검색 3개를 검색어별로 묶어서 보여준다.
 - 검색 기록은 24시간이 지나면 지운다. 어제 검색한 장소의 "지금 상황"은 의미가 줄어든다.
-- 각 묶음 안에서 글이 있는 장소를 최신순으로 위에, 글이 없는 장소는 아래에 "아직 소식이 없어요 · 첫 소식을 남겨주세요"로 둔다.
-- 새 글은 Realtime 구독으로 바로 반영한다.
+- 현장 메모(`kind = 'memo'`)만 보여준다. 채팅은 장소 게시판 안에서만 보인다. 이 탭은 "지금 상황"을 훑어보는 곳이라, 장소 밖에서 보는 채팅은 잡음이 된다.
+- 각 묶음 안에서 메모가 있는 장소를 최신순으로 위에, 메모가 없는 장소는 아래에 "아직 소식이 없어요 · 첫 소식을 남겨주세요"로 둔다.
+- 새 메모는 Realtime 구독으로 바로 반영한다.
 
 ### 4.3 장소 게시판
 
@@ -133,6 +142,32 @@
 - Claude 호출은 tool_choice로 도구를 강제해서 JSON 형태 결과를 받는다.
 - 한 번 검색에 Claude 2회 + 네이버 수 회 호출이라 10~20초 정도 걸린다. 화면에 진행 안내를 띄운다.
 - 분위기 한 줄은 주어진 후기 내용만 근거로 쓰게 하고 과장을 금지한다.
+
+### 네이버 호출 한도
+
+네이버 검색 API는 NAVER API HUB(네이버 클라우드 플랫폼)로 옮겨졌다. 예전 Developers Center 키는 쓸 수 없다.
+
+| 항목 | 값 |
+| --- | --- |
+| 호출 주소 | `https://naverapihub.apigw.ntruss.com/search/v1/{blog,local}` (`.json` 없음) |
+| 인증 헤더 | `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` |
+| 파라미터·응답 | 예전과 같음 (`query`, `display`, `items[]`, `mapx`/`mapy`) |
+| 호출 한도 | 검색 카테고리 통합 월 775,000건. 요금표에는 "일 최대 25,000건"도 적혀 있어 일 25,000건 기준으로 잡는다 |
+| 초당 한도 | 키당 50 RPS, 넘으면 429 |
+| 한도 도달 | 자동 차단. 무료 기간에는 한도를 늘릴 수 없다. 50·80·100%에서 이메일 알림 |
+| 키 공유 | 같은 키를 쓰는 서비스끼리 호출량이 합산된다 |
+
+| 단계 | 검색 1회당 호출 |
+| --- | --- |
+| ② 블로그 | 3~5회 |
+| ④ 지역 | 최대 15회 |
+| 합계 | 약 20회 → 하루 약 1,250번 검색 |
+
+- **전용 키:** 이 프로젝트 전용 앱을 등록해서 키를 받는다. 다른 서비스와 같이 쓰면 한쪽 사용량 때문에 둘 다 멈춘다.
+- **지역 검색 캐시:** ④ 단계 전에 `places`에서 같은 가게를 먼저 찾고, 있으면 지역 검색을 건너뛴다. 같은 지역을 반복해서 검색하는 서비스라 호출이 크게 준다.
+- **동시 호출:** ④ 단계 지역 검색은 병렬로 보내되 키당 50 RPS 아래로 묶는다. 429는 1초 뒤 한 번 재시도한다.
+- **한도 초과 처리:** 월·일 한도로 차단되면 검색 전체를 실패로 처리하고 "오늘 검색 한도를 다 썼어요"를 띄운다. 이 경우를 "장소 확인 안 된 후기"로 분류하면 실제로 있는 가게도 미확인으로 보이므로 그렇게 처리하지 않는다.
+- **사용자별 검색 제한:** 한 사람이 반복 검색해도 하루치 한도가 바닥날 수 있어서 공개 전에 넣는다. 검색은 로그인이 필수라 IP가 아니라 사용자 ID 기준으로 센다 (14장 2단계).
 
 ### 장소 키
 
@@ -211,18 +246,25 @@ EXIF 위치 정보를 지우지 않으면 위치 공유를 뺀 의미가 없어�
 ## 8. 인증
 
 - Supabase Auth의 카카오 provider 사용
-- 읽기는 로그인 없이, 쓰기만 로그인 필요
-- 이메일을 받지 않는다. 받는 개인정보가 적을수록 처리방침이 단순해지고 유출 부담이 줄어든다.
-- 카카오 `account_email` 동의항목은 비즈 앱 전용이라, 설정하지 않으면 로그인 시 KOE205 에러가 난다. Supabase 카카오 provider 설정에서 **Allow users without an email**을 켜서 해결한다.
-- 카카오 동의항목은 닉네임, 프로필 사진만 설정한다.
-- 백엔드는 프론트가 보낸 Supabase access token을 `auth.getUser(token)`으로 검증한다.
+- 검색, 읽기, 쓰기 모두 로그인이 필요하다. 사용자 ID가 항상 있으므로 검색 제한, 검색 기록, 닉네임을 모두 사용자 기준으로 단순하게 처리할 수 있고, 네이버·Claude 호출 비용을 익명 사용자가 쓰는 일도 막는다.
+- Supabase 카카오 provider는 `account_email`을 항상 요청한다. "Allow users without an email"을 켜거나 `scopes`를 따로 넘겨도 빠지지 않는다(직접 확인). 카카오 앱에 이메일 동의항목이 없으면 로그인 시 KOE205 에러가 난다.
+- 그래서 카카오 앱을 **개인 개발자 비즈 앱**으로 전환하고 이메일을 **선택 동의**로 둔다. 사용자는 동의 화면에서 이메일 제공을 해제할 수 있다.
+- 이메일을 받더라도 서비스에서는 쓰지 않는다. 화면 노출, 알림 발송, 식별 모두 Supabase 사용자 ID로만 한다. Supabase "Allow users without an email"은 켜두어 이메일 없이도 가입되게 한다.
+- 이메일을 아예 받지 않으려면 Supabase 기본 카카오 provider 대신, 백엔드에서 카카오 OIDC로 ID 토큰을 받아 `signInWithIdToken`으로 로그인시켜야 한다. 코드와 관리 부담이 커서 지금은 하지 않는다.
+- 백엔드는 모든 API에서 프론트가 보낸 Supabase access token을 `auth.getUser(token)`으로 검증한다. 공유 미리보기(`GET /share/:placeKey`)만 예외다.
+- 프론트가 Supabase에서 직접 읽을 때도 로그인 세션(authenticated 역할)으로 읽는다. 로그인하지 않은 anon 역할에는 테이블 권한을 주지 않는다.
 
 ### 카카오 디벨로퍼스 설정
 
-1. 앱 생성 → 카카오 로그인 활성화
-2. Redirect URI에 `https://<project>.supabase.co/auth/v1/callback` 등록
-3. 보안 → Client Secret 생성 후 활성화
-4. 동의항목: 닉네임, 프로필 사진
+1. 앱 생성 → 카카오 로그인 사용 설정 ON
+2. 앱 → 플랫폼 키 → REST API 키: 카카오 로그인 리다이렉트 URI에 `https://<project>.supabase.co/auth/v1/callback` 등록, 클라이언트 시크릿 생성 후 활성화
+3. 개인 개발자 비즈 앱 전환 (본인인증)
+4. 동의항목: 닉네임 필수, 프로필 사진 선택, 카카오계정(이메일) 선택
+
+### Supabase 설정
+
+- Authentication → Sign In / Providers → Kakao: REST API 키, 클라이언트 시크릿, Allow users without an email ON
+- Authentication → URL Configuration: Site URL `http://localhost:5173`, Redirect URLs `http://localhost:5173/**` (배포 시 실제 도메인 추가)
 
 ## 9. 데이터 모델
 
@@ -273,7 +315,7 @@ create table public.place_summaries (
   generated_at timestamptz not null default now()
 );
 
--- 로그인 사용자 검색 기록 (비로그인은 localStorage)
+-- 검색 기록
 create table public.search_sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -287,15 +329,18 @@ create table public.search_sessions (
 
 | 테이블 | 읽기 | 쓰기 |
 | --- | --- | --- |
-| places | 누구나 | 백엔드(service role) |
-| place_posts | 누구나, 24시간 이내 글만 | 백엔드(service role) |
-| place_summaries | 누구나 | 백엔드(service role) |
+| places | 로그인 사용자 | 백엔드(service role) |
+| place_posts | 로그인 사용자, 24시간 이내 글만 | 백엔드(service role) |
+| place_summaries | 로그인 사용자 | 백엔드(service role) |
 | search_sessions | 본인만 | 본인만 |
-| storage `place-photos` | 공개 | 로그인 사용자, 본인 폴더만 |
+| storage `place-photos` | 공개 (추측하기 어려운 uuid 경로) | 로그인 사용자, 본인 폴더만 |
+
+anon 역할에는 테이블 권한을 주지 않는다. 마이그레이션은 `supabase/migrations/`에 둔다.
 
 ```sql
 create policy "recent posts readable" on public.place_posts
-  for select using (created_at > now() - interval '24 hours');
+  for select to authenticated
+  using (created_at > now() - interval '24 hours');
 
 create policy "upload to own folder" on storage.objects
   for insert to authenticated
@@ -308,6 +353,8 @@ alter publication supabase_realtime add table public.place_posts;
 ```
 
 ## 10. API
+
+모든 API는 `Authorization: Bearer <supabase access token>`이 필요하다. 없거나 만료되면 401을 반환한다.
 
 ### `POST /search`
 
@@ -351,11 +398,9 @@ alter publication supabase_realtime add table public.place_posts;
 }
 ```
 
-검색어는 2~100자.
+검색어는 2~100자. 사용자별 검색 제한을 넘으면 429를 반환한다.
 
-### `POST /places/:placeKey/posts` (로그인 필요)
-
-요청 헤더: `Authorization: Bearer <supabase access token>`
+### `POST /places/:placeKey/posts`
 
 ```json
 {
@@ -386,7 +431,7 @@ alter publication supabase_realtime add table public.place_posts;
 | 용도 | 방식 |
 | --- | --- |
 | 장소 게시판 새 글 | `postgres_changes` INSERT, `place_key=eq.{key}` |
-| 실시간 게시판 탭 새 글 | `postgres_changes` INSERT, `place_key=in.(k1,k2,...)` |
+| 실시간 게시판 탭 새 메모 | `postgres_changes` INSERT, `place_key=in.(k1,k2,...)`, 받은 뒤 `kind = 'memo'`만 표시 |
 | 보는 사람 수 | Presence, 채널 `place:{key}` |
 
 `in` 필터는 값 100개까지 받으므로 검색 3개 분량(보통 20~30곳)이면 충분하다. 새 검색을 하면 구독 대상 목록만 바꾼다.
@@ -406,8 +451,8 @@ PORT=4000
 WEB_ORIGIN=http://localhost:5173
 ANTHROPIC_API_KEY=
 CLAUDE_MODEL=claude-sonnet-5-5
-NAVER_CLIENT_ID=
-NAVER_CLIENT_SECRET=
+NAVER_CLIENT_ID=       # NAVER API HUB Client ID → X-NCP-APIGW-API-KEY-ID
+NAVER_CLIENT_SECRET=   # NAVER API HUB Client Secret → X-NCP-APIGW-API-KEY
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
@@ -422,9 +467,9 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 14. 개발 순서
 
-1. 검색 파이프라인 (블로그 → Claude 추출 → 지역 검색 검증) + 검색 결과 탭
-2. 장소 키 생성, places 저장
-3. 카카오 로그인
+1. 카카오 로그인: 로그인 화면, 라우트 가드, 백엔드 토큰 검증 가드
+2. 검색 파이프라인 (블로그 → Claude 추출 → 지역 검색 검증) + 검색 결과 탭, 지역 검색 캐시, 한도 초과 처리, 사용자별 검색 제한
+3. 장소 키 생성, places 저장
 4. 장소 게시판: 글쓰기, 빠른 태그, 실시간 구독
 5. 실시간 게시판 탭: 검색 기록, 검색어별 묶음
 6. 사진 업로드 (EXIF 제거, 촬영 시각 확인) + 정리 작업
@@ -436,7 +481,6 @@ VITE_SUPABASE_ANON_KEY=
 
 - 신고·차단: 메시지 단위 신고, 사용자 차단 목록. 실제 사용자가 생기면 가장 먼저 필요하다.
 - 업주 홍보 글 규칙 또는 업주 공식 계정
-- 검색 API 요청 제한 (Claude, 네이버 호출 비용 보호)
 - Claude 비전으로 사진 보고 태그 추천 + 부적절 이미지 1차 필터
 - 장소 카드와 게시판에 네이버 지도 표시 (좌표는 이미 저장됨)
 - 얼굴 자동 블러 (MediaPipe 등)
