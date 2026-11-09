@@ -17,10 +17,10 @@ function Login() {
     });
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-stone-50 px-4 text-zinc-900">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-neutral-50 px-4 text-neutral-900">
       <div className="flex flex-col items-center gap-3 text-center">
         <h1 className="text-3xl font-bold">장소 메모판</h1>
-        <p className="text-sm text-zinc-600">분위기로 장소를 찾고, 지금 자리·주차·웨이팅을 확인하세요</p>
+        <p className="text-sm text-neutral-600">분위기로 장소를 찾고, 지금 자리·주차·웨이팅을 확인하세요</p>
       </div>
       <button
         type="button"

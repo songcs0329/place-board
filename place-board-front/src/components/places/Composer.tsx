@@ -68,16 +68,20 @@ function Composer({ placeKey }: { placeKey: string }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="sticky bottom-0 flex flex-col gap-2 border-t border-stone-200 bg-white px-3 pt-2.5 pb-3.5"
+      className="sticky bottom-0 flex flex-col gap-2 border-t border-neutral-200 bg-white px-3 pt-2.5 pb-3.5"
     >
       {preview && (
         <div className="flex items-center gap-3">
           <img src={preview} alt="올릴 사진 미리보기" className="size-16 rounded-lg object-cover" />
-          <div className="flex flex-col gap-1 text-xs text-stone-600">
+          <div className="flex flex-col gap-1 text-xs text-neutral-600">
             <span>
               {photo?.takenAt ? '촬영 시각 확인됨 · 위치 정보는 지웠어요' : '촬영 시각 없음 · 위치 정보는 지웠어요'}
             </span>
-            <button type="button" onClick={() => setPhoto(null)} className="min-h-8 self-start text-red-700">
+            <button
+              type="button"
+              onClick={() => setPhoto(null)}
+              className="min-h-8 self-start text-neutral-600 underline"
+            >
               사진 빼기
             </button>
           </div>
@@ -94,7 +98,8 @@ function Composer({ placeKey }: { placeKey: string }) {
               onClick={() => toggle(tag.value)}
               className={cn(
                 'h-9 shrink-0 rounded-full border px-3 text-[13px]',
-                on ? 'border-[#2F6B4F] bg-[#2F6B4F] text-white' : 'border-stone-300 bg-white text-zinc-900',
+                // 선택하면 태그 색(TagBadge와 같은 색) + 글자색 테두리로 선택 상태를 분명히
+                on ? cn(tag.className, 'border-current font-semibold') : 'border-neutral-300 bg-white text-neutral-900',
               )}
             >
               {tag.label}
@@ -107,7 +112,7 @@ function Composer({ placeKey }: { placeKey: string }) {
           aria-label="사진 첨부"
           className={cn(
             'flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border',
-            photo ? 'border-[#2F6B4F] bg-[#EAF2EC] text-[#2F6B4F]' : 'border-stone-300 bg-white text-stone-600',
+            photo ? 'border-[#111] bg-neutral-100 text-[#111]' : 'border-neutral-300 bg-white text-neutral-600',
           )}
         >
           <svg
@@ -134,17 +139,17 @@ function Composer({ placeKey }: { placeKey: string }) {
           maxLength={300}
           onChange={(event) => setBody(event.target.value)}
           placeholder={isMemo ? '한마디 덧붙이기 (선택)' : '채팅하듯 써보세요'}
-          className="h-11 min-w-0 flex-1 rounded-xl border border-stone-300 bg-[#FAFAF7] px-3 text-sm"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm"
         />
         <button
           type="submit"
           disabled={create.isPending || !canSend}
-          className="h-11 shrink-0 rounded-xl bg-[#2F6B4F] px-4 text-sm font-bold text-white disabled:bg-stone-300"
+          className="h-11 shrink-0 rounded-xl bg-[#111] px-4 text-sm font-bold text-white disabled:bg-neutral-300"
         >
           {create.isPending && photo ? '올리는 중' : '보내기'}
         </button>
       </div>
-      <span className={cn('text-[11px]', error ? 'text-red-700' : 'text-stone-500')} role="status">
+      <span className={cn('text-[11px]', error ? 'text-red-700' : 'text-neutral-500')} role="status">
         {error ??
           (photo
             ? '다른 사람 얼굴이 나오지 않게 찍어주세요 · 현장 메모로 올라가요'

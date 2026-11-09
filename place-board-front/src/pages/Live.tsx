@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { useLatestMemos, useMemoFeed, type LatestMemo } from '@/hooks/useLatestMemos';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
-import { tagLabel } from '@/libs/tags';
+import TagBadge from '@/components/commons/TagBadge';
 import { timeAgo } from '@/libs/utils/time';
 
 // 실시간 게시판 탭 (설계 4.2): 최근 검색 3개를 검색어별로 묶고,
@@ -27,9 +27,9 @@ function Live() {
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex flex-col gap-1 border-b border-stone-200 bg-white px-4 pt-4 pb-3">
+      <header className="sticky top-0 z-10 flex flex-col gap-1 border-b border-neutral-200 bg-white px-4 pt-4 pb-3">
         <h1 className="text-lg font-bold">실시간 게시판</h1>
-        <p className="text-[13px] text-stone-500">최근 검색 3개 · 현장 메모가 있는 장소만 모아 보여줘요</p>
+        <p className="text-[13px] text-neutral-500">최근 검색 3개 · 현장 메모가 있는 장소만 모아 보여줘요</p>
       </header>
 
       <main className="mx-auto flex w-full max-w-xl flex-col gap-5 p-4">
@@ -39,10 +39,10 @@ function Live() {
           </p>
         )}
         {searches.isSuccess && (keys.length === 0 || memos.isSuccess) && groups.length === 0 && (
-          <p className="py-10 text-center text-sm text-stone-600">
+          <p className="py-10 text-center text-sm text-neutral-600">
             {keys.length === 0 ? '최근 24시간 검색이 없어요.' : '검색한 장소에 아직 현장 소식이 없어요.'}
             <br />
-            <Link to="/" className="font-medium text-zinc-900 underline">
+            <Link to="/search" className="font-medium text-neutral-900 underline">
               검색 결과
             </Link>
             에서 장소 게시판에 첫 소식을 남겨보세요.
@@ -53,9 +53,9 @@ function Live() {
           <section key={s.id} className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between gap-2">
               <h2 className="text-[15px] font-bold">“{s.query}”</h2>
-              <span className="shrink-0 text-xs text-stone-500">{timeAgo(s.createdAt)} 검색</span>
+              <span className="shrink-0 text-xs text-neutral-500">{timeAgo(s.createdAt)} 검색</span>
             </div>
-            <ul className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+            <ul className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
               {s.places.map((p) => (
                 <PlaceRow key={p.place_key} placeKey={p.place_key} name={p.name} memo={latest[p.place_key]} />
               ))}
@@ -69,19 +69,17 @@ function Live() {
 
 function PlaceRow({ placeKey, name, memo }: { placeKey: string; name: string; memo: LatestMemo }) {
   return (
-    <li className="border-b border-stone-100 last:border-b-0">
+    <li className="border-b border-neutral-100 last:border-b-0">
       <Link to={`/places/${encodeURIComponent(placeKey)}`} className="flex flex-col gap-1 px-4 py-3.5">
         <div className="flex justify-between gap-2">
           <strong className="text-sm">{name}</strong>
-          <span className="shrink-0 text-xs text-stone-500">{timeAgo(memo.created_at)}</span>
+          <span className="shrink-0 text-xs text-neutral-500">{timeAgo(memo.created_at)}</span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          {memo.tags.map((t) => (
-            <span key={t} className="rounded-full bg-[#EAF2EC] px-2 py-0.5 text-xs font-medium text-[#24543D]">
-              {tagLabel(t)}
-            </span>
+          {memo.tags.map((tag) => (
+            <TagBadge key={tag} tag={tag} />
           ))}
-          {memo.body && <span className="text-[13px] text-stone-600">{memo.body}</span>}
+          {memo.body && <span className="text-[13px] text-neutral-600">{memo.body}</span>}
         </div>
       </Link>
     </li>

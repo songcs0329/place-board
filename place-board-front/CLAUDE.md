@@ -27,7 +27,9 @@ npm run preview   # 프로덕션 빌드 미리보기
 | 레이어 | 경로 | 역할 |
 |---|---|---|
 | Pages | `src/pages/` | 라우트 단위 화면; 도메인 하위 폴더는 `index.tsx` 사용 |
-| Components | `src/components/` | 재사용 가능한 UI |
+| Components | `src/components/{페이지}/` | 한 페이지에서만 쓰는 UI. 폴더명은 페이지 이름 소문자 (예: `search/`, `places/`) |
+| Layouts | `src/components/layouts/` | 라우트를 감싸는 컴포넌트 (라우트 가드, 탭 레이아웃) |
+| Commons | `src/components/commons/` | 두 페이지 이상에서 쓰는 UI. 생기면 그때 만든다 |
 | Hooks | `src/hooks/` | API 훅: `use` + apiManager 메소드명 (예: `getTodo` → `useGetTodo`); 로직 훅: 성격별 접미사 (예: 폼 → `useXxxForm`) |
 | Stores | `src/stores/` | Zustand — 여러 페이지에서 공유되는 상태에만 사용 |
 | API client | `src/libs/apis/restClient.ts` | Axios 인스턴스, `/api` → `VITE_APP_API_URL` 프록시 |

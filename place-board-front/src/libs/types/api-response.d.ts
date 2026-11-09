@@ -35,6 +35,12 @@ declare namespace ApiResponse {
   }
 
   // 4xx/5xx 응답 본문
+  // 글이 없으면 summary: null
+  interface Summary {
+    summary: string | null;
+    generatedAt: string | null;
+  }
+
   interface Error {
     code?: 'USER_LIMIT' | 'IN_PROGRESS' | 'NAVER_QUOTA' | 'TOO_FAST';
     message?: string | string[];

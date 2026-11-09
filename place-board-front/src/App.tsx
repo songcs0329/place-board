@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router';
-import RequireAuth from '@/components/RequireAuth';
-import TabLayout from '@/components/TabLayout';
-import Board from '@/pages/Board';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router';
+import RequireAuth from '@/components/layouts/RequireAuth';
+import TabLayout from '@/components/layouts/TabLayout';
 import Live from '@/pages/Live';
 import Login from '@/pages/Login';
 import NotFound from '@/pages/NotFound';
+import Places from '@/pages/Places';
 import Search from '@/pages/Search';
 
 function App() {
@@ -12,12 +12,13 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Navigate to="/search" replace />} />
         <Route element={<RequireAuth />}>
           <Route element={<TabLayout />}>
-            <Route path="/" element={<Search />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/live" element={<Live />} />
           </Route>
-          <Route path="/places/:placeKey" element={<Board />} />
+          <Route path="/places/:placeKey" element={<Places />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
