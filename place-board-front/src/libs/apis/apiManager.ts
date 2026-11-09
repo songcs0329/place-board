@@ -1,8 +1,8 @@
 import restClient from '@/libs/apis/restClient';
 
-// 백엔드(NestJS) 호출 함수: search, createPost, getSummary 등을 여기에 추가
+// 백엔드(NestJS) 호출 함수
 const apiManager = {
-  getMe: () => restClient.get<ApiResponse.Me>('/me'),
+  search: (query: string) => restClient.post<ApiResponse.Search>('/search', { query }),
 };
 
 export default apiManager;

@@ -9,6 +9,13 @@ const storageUtils = {
   removeLocalStorage: (keyname: string) => {
     localStorage.removeItem(keyname);
   },
+  getSessionStorage: <T>(keyname: string): T | null => {
+    const storageItem = sessionStorage.getItem(keyname);
+    return storageItem ? JSON.parse(storageItem) : null;
+  },
+  setSessionStorage: <T>(keyname: string, value: T) => {
+    sessionStorage.setItem(keyname, JSON.stringify(value));
+  },
 };
 
 export default storageUtils;
