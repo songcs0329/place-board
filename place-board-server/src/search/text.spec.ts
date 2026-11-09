@@ -12,10 +12,13 @@ describe('text', () => {
   });
 
   it('makePlaceKey: 표기 차이에 상관없이 같은 키, 16자', () => {
-    const a = makePlaceKey('<b>숲결</b> 카페', '경기도 양평군 서종면 1');
-    const b = makePlaceKey('숲결카페', '경기도  양평군 서종면 1');
-    expect(a).toBe(b);
-    expect(a).toHaveLength(16);
+    const decorated = makePlaceKey(
+      '<b>숲결</b> 카페',
+      '경기도 양평군 서종면 1',
+    );
+    const plain = makePlaceKey('숲결카페', '경기도  양평군 서종면 1');
+    expect(decorated).toBe(plain);
+    expect(decorated).toHaveLength(16);
   });
 
   it('sameName: 포함 관계면 같은 가게, 너무 짧으면 아님', () => {

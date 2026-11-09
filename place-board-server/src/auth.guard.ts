@@ -18,20 +18,22 @@ export class AuthGuard implements CanActivate {
     @Inject(SupabaseClient) private readonly supabase: SupabaseClient,
   ) {}
 
-  async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const req = ctx.switchToHttp().getRequest<AuthedRequest>();
-    const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<AuthedRequest>();
+    const token = /^Bearer (.+)$/.exec(
+      request.headers.authorization ?? '',
+    )?.[1];
     if (!token) throw new UnauthorizedException();
 
     const { data, error } = await this.supabase.auth.getUser(token);
     if (error || !data.user) throw new UnauthorizedException();
 
-    req.user = data.user;
+    request.user = data.user;
     return true;
   }
 }
 
 export const CurrentUser = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext) =>
-    ctx.switchToHttp().getRequest<AuthedRequest>().user!,
+  (_: unknown, context: ExecutionContext) =>
+    context.switchToHttp().getRequest<AuthedRequest>().user!,
 );

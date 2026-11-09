@@ -13,7 +13,10 @@ const ENTITIES: Record<string, string> = {
 export const clean = (s = '') =>
   s
     .replace(/<[^>]+>/g, '')
-    .replace(/&(amp|lt|gt|quot|#39|apos);/g, (_, e: string) => ENTITIES[e])
+    .replace(
+      /&(amp|lt|gt|quot|#39|apos);/g,
+      (_, entity: string) => ENTITIES[entity],
+    )
     .trim();
 
 // 태그·공백·특수문자 제거, 소문자
@@ -30,8 +33,12 @@ export const makePlaceKey = (title: string, address: string) =>
     .slice(0, 16);
 
 // 정규화한 이름이 한쪽에 포함되면 같은 가게 (2글자 미만은 오탐이 많아 제외)
-export const sameName = (a: string, b: string) => {
-  const x = normalize(a);
-  const y = normalize(b);
-  return x.length >= 2 && y.length >= 2 && (x.includes(y) || y.includes(x));
+export const sameName = (first: string, second: string) => {
+  const firstName = normalize(first);
+  const secondName = normalize(second);
+  return (
+    firstName.length >= 2 &&
+    secondName.length >= 2 &&
+    (firstName.includes(secondName) || secondName.includes(firstName))
+  );
 };

@@ -24,18 +24,18 @@ export function useRecentSearches() {
         .limit(3);
       if (sessions.error) throw sessions.error;
 
-      const keys = [...new Set(sessions.data.flatMap((s) => s.place_keys as string[]))];
+      const keys = [...new Set(sessions.data.flatMap((session) => session.place_keys as string[]))];
       const places = keys.length
         ? await supabase.from('places').select('place_key, name').in('place_key', keys)
         : { data: [], error: null };
       if (places.error) throw places.error;
-      const byKey = new Map(places.data.map((p) => [p.place_key, p]));
+      const placesByKey = new Map(places.data.map((place) => [place.place_key, place]));
 
-      return sessions.data.map((s) => ({
-        id: s.id,
-        query: s.query,
-        createdAt: s.created_at,
-        places: (s.place_keys as string[]).flatMap((k) => byKey.get(k) ?? []),
+      return sessions.data.map((session) => ({
+        id: session.id,
+        query: session.query,
+        createdAt: session.created_at,
+        places: (session.place_keys as string[]).flatMap((placeKey) => placesByKey.get(placeKey) ?? []),
       }));
     },
   });

@@ -36,7 +36,7 @@ export class SearchService {
   constructor(
     private readonly claude: ClaudeService,
     private readonly naver: NaverService,
-    @Inject(SupabaseClient) private readonly db: SupabaseClient,
+    @Inject(SupabaseClient) private readonly supabase: SupabaseClient,
   ) {}
 
   async search(userId: string, query: string) {
@@ -56,7 +56,7 @@ export class SearchService {
 
   private async checkLimit(userId: string) {
     const since = new Date(Date.now() - 24 * 3600_000).toISOString();
-    const { count, error } = await this.db
+    const { count, error } = await this.supabase
       .from('search_sessions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
@@ -72,37 +72,42 @@ export class SearchService {
 
   private async run(userId: string, query: string) {
     // ① 검색어 생성 → ② 블로그 검색 (링크 기준 중복 제거)
-    const queries = await this.claude.blogQueries(query);
-    const lists = await Promise.all(queries.map((q) => this.naver.blog(q)));
-    const seen = new Set<string>();
-    const blogs: Blog[] = lists
+    const blogQueries = await this.claude.blogQueries(query);
+    const blogLists = await Promise.all(
+      blogQueries.map((blogQuery) => this.naver.blog(blogQuery)),
+    );
+    const seenLinks = new Set<string>();
+    const blogs: Blog[] = blogLists
       .flat()
-      .filter((b) => !seen.has(b.link) && seen.add(b.link))
-      .map((b) => ({
-        title: clean(b.title),
-        link: b.link,
-        snippet: clean(b.description),
-        blogger: clean(b.bloggername),
-        postdate: b.postdate.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'),
+      .filter((blog) => !seenLinks.has(blog.link) && seenLinks.add(blog.link))
+      .map((blog) => ({
+        title: clean(blog.title),
+        link: blog.link,
+        snippet: clean(blog.description),
+        blogger: clean(blog.bloggername),
+        postdate: blog.postdate.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'),
       }));
     if (!blogs.length) return { query, places: [], unmatched: [] };
 
     // ③ 가게 추출 (글 번호는 1부터)
     const candidates = await this.claude.extractPlaces(
       query,
-      blogs.map((b, i) => ({
-        id: i + 1,
-        title: b.title,
-        description: b.snippet,
+      blogs.map((blog, index) => ({
+        id: index + 1,
+        title: blog.title,
+        description: blog.snippet,
       })),
     );
 
     // ④ 캐시 → 지역 검색으로 검증 (한도 초과면 NaverQuotaError로 검색 전체 실패)
     const resolved = await Promise.all(
-      candidates.map(async (c) => ({ c, row: await this.resolve(c) })),
+      candidates.map(async (candidate) => ({
+        candidate,
+        row: await this.resolve(candidate),
+      })),
     );
 
-    const byKey = new Map<
+    const placesByKey = new Map<
       string,
       ReturnType<typeof toPlace> & { summary: string; blogs: Blog[] }
     >();
@@ -112,56 +117,56 @@ export class SearchService {
       summary: string;
       blogs: Blog[];
     }[] = [];
-    for (const { c, row } of resolved) {
-      const cBlogs = c.blogIds
+    for (const { candidate, row } of resolved) {
+      const candidateBlogs = candidate.blogIds
         .map((id) => blogs[id - 1])
-        .filter((b): b is Blog => !!b);
+        .filter((blog): blog is Blog => !!blog);
       if (!row) {
         unmatched.push({
-          name: c.name,
-          area: c.area,
-          summary: c.summary,
-          blogs: cBlogs,
+          name: candidate.name,
+          area: candidate.area,
+          summary: candidate.summary,
+          blogs: candidateBlogs,
         });
         continue;
       }
-      const existing = byKey.get(row.place_key);
+      const existing = placesByKey.get(row.place_key);
       if (existing) {
         // 서로 다른 후보가 같은 가게로 확인되면 후기를 합친다
-        for (const b of cBlogs)
-          if (!existing.blogs.some((x) => x.link === b.link))
-            existing.blogs.push(b);
+        for (const blog of candidateBlogs)
+          if (!existing.blogs.some((saved) => saved.link === blog.link))
+            existing.blogs.push(blog);
       } else {
-        byKey.set(row.place_key, {
+        placesByKey.set(row.place_key, {
           ...toPlace(row),
-          summary: c.summary,
-          blogs: cBlogs,
+          summary: candidate.summary,
+          blogs: candidateBlogs,
         });
       }
     }
-    const places = [...byKey.values()].sort(
-      (a, b) => b.blogs.length - a.blogs.length,
+    const places = [...placesByKey.values()].sort(
+      (first, second) => second.blogs.length - first.blogs.length,
     );
 
-    const { error } = await this.db.from('search_sessions').insert({
+    const { error } = await this.supabase.from('search_sessions').insert({
       user_id: userId,
       query,
-      place_keys: places.map((p) => p.placeKey),
+      place_keys: places.map((place) => place.placeKey),
     });
     if (error) throw error;
 
     return { query, places, unmatched };
   }
 
-  private async resolve(c: Candidate): Promise<PlaceRow | null> {
-    return (await this.findCached(c)) ?? (await this.lookup(c));
+  private async resolve(candidate: Candidate): Promise<PlaceRow | null> {
+    return (await this.findCached(candidate)) ?? (await this.lookup(candidate));
   }
 
   // 지역 검색 캐시: places에 같은 이름 + 같은 지역이 있으면 네이버 호출 생략
-  private async findCached(c: Candidate): Promise<PlaceRow | null> {
-    const term = c.name.replace(/[%_,()\\]/g, '').trim();
+  private async findCached(candidate: Candidate): Promise<PlaceRow | null> {
+    const term = candidate.name.replace(/[%_,()\\]/g, '').trim();
     if (term.length < 2) return null;
-    const { data, error } = await this.db
+    const { data, error } = await this.supabase
       .from('places')
       .select('*')
       .ilike('name', `%${term}%`)
@@ -169,16 +174,18 @@ export class SearchService {
     if (error) throw error;
     return (
       (data as PlaceRow[]).find(
-        (p) =>
-          sameName(p.name, c.name) &&
-          `${p.address ?? ''} ${p.road_address ?? ''}`.includes(c.area),
+        (place) =>
+          sameName(place.name, candidate.name) &&
+          `${place.address ?? ''} ${place.road_address ?? ''}`.includes(
+            candidate.area,
+          ),
       ) ?? null
     );
   }
 
-  private async lookup(c: Candidate): Promise<PlaceRow | null> {
-    const items = await this.naver.local(`${c.area} ${c.name}`);
-    const hit = items.find((i) => sameName(i.title, c.name));
+  private async lookup(candidate: Candidate): Promise<PlaceRow | null> {
+    const items = await this.naver.local(`${candidate.area} ${candidate.name}`);
+    const hit = items.find((item) => sameName(item.title, candidate.name));
     if (!hit) return null;
 
     const row: PlaceRow = {
@@ -192,7 +199,7 @@ export class SearchService {
       telephone: hit.telephone || null,
       link: hit.link || null,
     };
-    const { error } = await this.db
+    const { error } = await this.supabase
       .from('places')
       .upsert(
         { ...row, updated_at: new Date().toISOString() },
@@ -203,14 +210,14 @@ export class SearchService {
   }
 }
 
-const toPlace = (r: PlaceRow) => ({
-  placeKey: r.place_key,
-  name: r.name,
-  category: r.category ?? '',
-  address: r.address ?? '',
-  roadAddress: r.road_address ?? '',
-  lat: r.lat,
-  lng: r.lng,
-  telephone: r.telephone ?? '',
-  link: r.link ?? '',
+const toPlace = (row: PlaceRow) => ({
+  placeKey: row.place_key,
+  name: row.name,
+  category: row.category ?? '',
+  address: row.address ?? '',
+  roadAddress: row.road_address ?? '',
+  lat: row.lat,
+  lng: row.lng,
+  telephone: row.telephone ?? '',
+  link: row.link ?? '',
 });

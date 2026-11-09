@@ -24,14 +24,14 @@ export class SearchController {
 
     try {
       return await this.searchService.search(user.id, query);
-    } catch (e) {
-      if (e instanceof NaverQuotaError) {
+    } catch (error) {
+      if (error instanceof NaverQuotaError) {
         throw new ServiceUnavailableException({
           code: 'NAVER_QUOTA',
           message: '오늘 검색 한도를 다 썼어요',
         });
       }
-      throw e;
+      throw error;
     }
   }
 }

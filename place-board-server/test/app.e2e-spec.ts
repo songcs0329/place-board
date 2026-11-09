@@ -17,7 +17,10 @@ describe('AuthGuard (e2e)', () => {
   });
 
   it('토큰 없이 POST /search → 401', () => {
-    return request(app.getHttpServer()).post('/search').send({ query: '카페' }).expect(401);
+    return request(app.getHttpServer())
+      .post('/search')
+      .send({ query: '카페' })
+      .expect(401);
   });
 
   afterEach(async () => {

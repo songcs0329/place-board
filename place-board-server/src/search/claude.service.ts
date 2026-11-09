@@ -45,7 +45,7 @@ export class ClaudeService {
   constructor(private readonly config: ConfigService) {}
 
   async blogQueries(query: string): Promise<string[]> {
-    const out = await this.json<{ queries: string[] }>(
+    const output = await this.json<{ queries: string[] }>(
       QUERIES_SYSTEM,
       `요청: ${query}`,
       1000,
@@ -56,8 +56,8 @@ export class ClaudeService {
         additionalProperties: false,
       },
     );
-    return out.queries
-      .map((q) => q.trim())
+    return output.queries
+      .map((blogQuery) => blogQuery.trim())
       .filter(Boolean)
       .slice(0, 5);
   }
@@ -67,9 +67,9 @@ export class ClaudeService {
     blogs: BlogForPrompt[],
   ): Promise<Candidate[]> {
     const list = blogs
-      .map((b) => `[${b.id}] ${b.title} | ${b.description}`)
+      .map((blog) => `[${blog.id}] ${blog.title} | ${blog.description}`)
       .join('\n');
-    const out = await this.json<{ places: Candidate[] }>(
+    const output = await this.json<{ places: Candidate[] }>(
       EXTRACT_SYSTEM,
       `요청: ${query}\n\n후기:\n${list}`,
       4000,
@@ -95,7 +95,7 @@ export class ClaudeService {
         additionalProperties: false,
       },
     );
-    return out.places.slice(0, 15);
+    return output.places.slice(0, 15);
   }
 
   // 설계 6장 AI 현장 요약: 글 목록 → 40자 이내 한 줄
@@ -120,16 +120,16 @@ export class ClaudeService {
     maxTokens: number,
     schema: Record<string, unknown>,
   ): Promise<T> {
-    const res = await this.client.messages.create({
+    const response = await this.client.messages.create({
       model: this.config.getOrThrow<string>('CLAUDE_MODEL'),
       max_tokens: maxTokens,
       system,
       messages: [{ role: 'user', content: user }],
       output_config: { format: { type: 'json_schema', schema }, effort: 'low' },
     });
-    const text = res.content.find((b) => b.type === 'text');
-    if (res.stop_reason !== 'end_turn' || !text)
-      throw new Error(`claude stop_reason=${res.stop_reason}`);
+    const text = response.content.find((block) => block.type === 'text');
+    if (response.stop_reason !== 'end_turn' || !text)
+      throw new Error(`claude stop_reason=${response.stop_reason}`);
     return JSON.parse(text.text) as T;
   }
 }

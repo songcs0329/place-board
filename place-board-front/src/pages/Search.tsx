@@ -9,8 +9,8 @@ import storageUtils from '@/libs/utils/storageUtils';
 
 const RESULT_KEY = 'lastSearch';
 
-const errorMessage = (e: unknown) => {
-  const data = isAxiosError<ApiResponse.Error>(e) ? e.response?.data : undefined;
+const errorMessage = (error: unknown) => {
+  const data = isAxiosError<ApiResponse.Error>(error) ? error.response?.data : undefined;
   switch (data?.code) {
     case 'USER_LIMIT':
       return '오늘 검색 횟수를 다 썼어요. 내일 다시 검색해 주세요.';
@@ -27,10 +27,10 @@ function Search() {
   const [result, setResult] = useState(() => storageUtils.getSessionStorage<ApiResponse.Search>(RESULT_KEY));
   const [query, setQuery] = useState(result?.query ?? '');
   const search = useSearch();
-  const memos = useLatestMemos(result?.places.map((p) => p.placeKey) ?? []);
+  const memos = useLatestMemos(result?.places.map((place) => place.placeKey) ?? []);
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     search.mutate(query.trim(), {
       onSuccess: (data) => {
         setResult(data);
@@ -59,7 +59,7 @@ function Search() {
             minLength={2}
             maxLength={100}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="우드톤 분위기 경기도 외곽 대형 카페"
             className="h-11 min-w-0 flex-1 rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm"
           />
@@ -98,8 +98,8 @@ function Search() {
               <span className="text-xs text-neutral-500">장소 {result.places.length}곳 · 관련 후기 많은 순</span>
             )}
 
-            {result.places.map((p) => (
-              <PlaceCard key={p.placeKey} place={p} memo={memos.data?.[p.placeKey]} />
+            {result.places.map((place) => (
+              <PlaceCard key={place.placeKey} place={place} memo={memos.data?.[place.placeKey]} />
             ))}
 
             {result.unmatched.length > 0 && (
@@ -111,13 +111,13 @@ function Search() {
                   <p className="text-xs text-neutral-500">
                     지도 검색으로 확인되지 않았어요. 새로 생겼거나 폐업했을 수 있어요.
                   </p>
-                  {result.unmatched.map((u) => (
-                    <div key={`${u.name}|${u.area}`} className="flex flex-col gap-1.5">
+                  {result.unmatched.map((unmatched) => (
+                    <div key={`${unmatched.name}|${unmatched.area}`} className="flex flex-col gap-1.5">
                       <span className="text-sm font-bold">
-                        {u.name} <span className="text-xs font-normal text-neutral-500">{u.area}</span>
+                        {unmatched.name} <span className="text-xs font-normal text-neutral-500">{unmatched.area}</span>
                       </span>
-                      <span className="text-[13px]">“{u.summary}”</span>
-                      <BlogList blogs={u.blogs} />
+                      <span className="text-[13px]">“{unmatched.summary}”</span>
+                      <BlogList blogs={unmatched.blogs} />
                     </div>
                   ))}
                 </div>

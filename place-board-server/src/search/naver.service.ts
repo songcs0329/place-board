@@ -45,7 +45,7 @@ export class NaverService {
   ): Promise<T[]> {
     for (let attempt = 0; ; attempt++) {
       await this.slot();
-      const res = await fetch(
+      const response = await fetch(
         `${this.base}/${path}?${new URLSearchParams(params)}`,
         {
           headers: {
@@ -57,7 +57,7 @@ export class NaverService {
           },
         },
       );
-      if (res.status === 429) {
+      if (response.status === 429) {
         // 초당 한도면 1초 뒤 재시도로 풀린다. 재시도도 429면 일·월 한도 차단으로 본다
         if (attempt === 0) {
           await sleep(1000);
@@ -65,8 +65,8 @@ export class NaverService {
         }
         throw new NaverQuotaError();
       }
-      if (!res.ok) throw new Error(`naver ${path} ${res.status}`);
-      return ((await res.json()) as { items?: T[] }).items ?? [];
+      if (!response.ok) throw new Error(`naver ${path} ${response.status}`);
+      return ((await response.json()) as { items?: T[] }).items ?? [];
     }
   }
 

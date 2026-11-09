@@ -11,12 +11,12 @@ function BlogList({ blogs }: { blogs: ApiResponse.Blog[] }) {
     <div className="flex flex-col gap-1.5 border-t border-neutral-200 pt-2.5">
       <span className="text-xs font-bold text-neutral-600">관련 후기 {blogs.length}건</span>
       <ul className="flex flex-col gap-1">
-        {shown.map((b) => (
-          <li key={b.link} className="text-[13px] leading-snug">
-            <a href={b.link} target="_blank" rel="noopener noreferrer" className="text-neutral-900 hover:underline">
-              · {b.title}{' '}
+        {shown.map((blog) => (
+          <li key={blog.link} className="text-[13px] leading-snug">
+            <a href={blog.link} target="_blank" rel="noopener noreferrer" className="text-neutral-900 hover:underline">
+              · {blog.title}{' '}
               <span className="text-neutral-500">
-                — {b.blogger} · {b.postdate}
+                — {blog.blogger} · {blog.postdate}
               </span>
             </a>
           </li>

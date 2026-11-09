@@ -26,17 +26,17 @@ export function usePosts(placeKey: string) {
 }
 
 // Realtime·POST 응답은 user_id까지 오므로 Db.Post 컬럼만 남긴다
-export function addPost(qc: QueryClient, placeKey: string, post: Db.Post) {
+export function addPost(queryClient: QueryClient, placeKey: string, post: Db.Post) {
   const { id, place_key, nickname, body, tags, images, photo_taken_at, kind, created_at } = post;
   const clean: Db.Post = { id, place_key, nickname, body, tags, images, photo_taken_at, kind, created_at };
-  qc.setQueryData<Db.Post[]>(postsKey(placeKey), (old = []) =>
-    old.some((p) => p.id === clean.id) ? old : [...old, clean],
+  queryClient.setQueryData<Db.Post[]>(postsKey(placeKey), (previous = []) =>
+    previous.some((existing) => existing.id === clean.id) ? previous : [...previous, clean],
   );
 }
 
 // 새 글 실시간 반영 + 보는 사람 수 (설계 11장, 채널 place:{key})
 export function usePlaceChannel(placeKey: string) {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   const [viewers, setViewers] = useState(0);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function usePlaceChannel(placeKey: string) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'place_posts', filter: `place_key=eq.${placeKey}` },
-        (payload) => addPost(qc, placeKey, payload.new as Db.Post),
+        (payload) => addPost(queryClient, placeKey, payload.new as Db.Post),
       )
       .on('presence', { event: 'sync' }, () => setViewers(Object.keys(channel.presenceState()).length))
       .subscribe((status) => {
@@ -55,7 +55,7 @@ export function usePlaceChannel(placeKey: string) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [placeKey, qc]);
+  }, [placeKey, queryClient]);
 
   return viewers;
 }

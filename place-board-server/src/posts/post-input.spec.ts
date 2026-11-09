@@ -71,9 +71,9 @@ describe('parsePost', () => {
 
 describe('makeNickname', () => {
   it('같은 사람·같은 방이면 같고, 방이 바뀌면 달라진다', () => {
-    const a = makeNickname('user-1', 'place-a');
-    expect(makeNickname('user-1', 'place-a')).toBe(a);
-    expect(makeNickname('user-1', 'place-b')).not.toBe(a);
-    expect(a).toMatch(/^\S+ \S+ \d{1,2}$/);
+    const nickname = makeNickname('user-1', 'place-a');
+    expect(makeNickname('user-1', 'place-a')).toBe(nickname);
+    expect(makeNickname('user-1', 'place-b')).not.toBe(nickname);
+    expect(nickname).toMatch(/^\S+ \S+ \d{1,2}$/);
   });
 });
