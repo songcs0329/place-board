@@ -40,8 +40,8 @@ function Search() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#FAFAF7] text-zinc-900">
-      <header className="sticky top-0 flex flex-col gap-3 border-b border-stone-200 bg-white px-4 pt-4 pb-3">
+    <div className="flex flex-col text-zinc-900">
+      <header className="sticky top-0 z-10 flex flex-col gap-3 border-b border-stone-200 bg-white px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold">장소 메모판</h1>
           <button type="button" onClick={() => supabase.auth.signOut()} className="min-h-11 text-xs text-stone-500">

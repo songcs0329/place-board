@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import Composer from '@/components/Composer';
 import { usePlace } from '@/hooks/usePlace';
 import { usePlaceChannel, usePosts } from '@/hooks/usePosts';
@@ -9,6 +9,8 @@ import { ageMs, HOUR, timeAgo } from '@/libs/utils/time';
 // 장소 게시판 (설계 4.3): 현장 메모 + 채팅, 보는 사람 수
 function Board() {
   const placeKey = useParams().placeKey!;
+  const navigate = useNavigate();
+  const location = useLocation();
   const place = usePlace(placeKey);
   const posts = usePosts(placeKey);
   const viewers = usePlaceChannel(placeKey);
@@ -34,7 +36,13 @@ function Board() {
   return (
     <div className="flex min-h-screen flex-col bg-[#FAFAF7] text-zinc-900">
       <header className="sticky top-0 z-10 flex items-center gap-1 border-b border-stone-200 bg-white py-2 pr-3">
-        <Link to="/" aria-label="뒤로" className="flex size-11 items-center justify-center">
+        <button
+          type="button"
+          aria-label="뒤로"
+          // 앱 안에서 들어왔으면 그 탭으로, 공유 링크 등으로 바로 들어왔으면 검색으로
+          onClick={() => (location.key === 'default' ? navigate('/') : navigate(-1))}
+          className="flex size-11 items-center justify-center"
+        >
           <svg
             width="22"
             height="22"
@@ -46,7 +54,7 @@ function Board() {
           >
             <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </Link>
+        </button>
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate text-[17px] font-bold">{p.name}</h1>
           <span className="truncate text-xs text-stone-500">
