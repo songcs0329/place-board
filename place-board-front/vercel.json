@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://RAILWAY_SERVER_HOST/:path*" },
+    { "source": "/api/:path*", "destination": "https://place-board-production.up.railway.app/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

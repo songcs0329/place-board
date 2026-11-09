@@ -70,7 +70,7 @@
 | `VITE_APP_API_URL` | Vercel | 운영에서는 쓰지 않음 (rewrite가 처리). 비워둬도 된다 |
 | `VITE_SUPABASE_URL` | Vercel | 운영 Supabase Project URL |
 | `VITE_SUPABASE_ANON_KEY` | Vercel | 운영 publishable 키 |
-| `PORT` | Railway | 호스팅이 주는 값 사용 (보통 자동 주입) |
+| `PORT` | Railway | `4000`. Railway 도메인의 대상 포트와 맞춘다. 비워두면 Railway가 넣는 PORT(예: 8080)와 도메인 포트(4000)가 어긋나 502 |
 | `WEB_ORIGIN` | Railway | `https://<도메인>` |
 | `ANTHROPIC_API_KEY` | Railway | 운영 키 |
 | `CLAUDE_MODEL` | Railway | `claude-sonnet-5-5` |
@@ -90,10 +90,10 @@
 
 ## 6. 진행 순서
 
-1. [ ] 2번 코드 변경 (vercel.json, `/health`, Node 버전) → 커밋
+1. [x] 2번 코드 변경 (vercel.json, `/health`, Node 버전) → 커밋
 2. [ ] Supabase 운영 프로젝트 생성·마이그레이션·Auth·Realtime 설정
 3. [ ] NAVER 운영 키, Anthropic 운영 키 발급
-4. [ ] Railway에 서버 배포 (루트 디렉터리 `place-board-server`, 빌드 `npm run build`, 시작 `npm run start:prod`, 헬스 체크 `/health`, 인스턴스 1대) → 서버 주소 확인
+4. [x] Railway에 서버 배포 (루트 디렉터리 `place-board-server`, 빌드 `npm run build`, 시작 `npm run start:prod`, 헬스 체크 `/health`, 인스턴스 1대) → 서버 주소 확인
 5. [ ] `vercel.json`에 서버 주소 반영 → Vercel에 프론트 배포 (루트 디렉터리 `place-board-front`, 빌드 `npm run build`, 출력 `dist`)
 6. [ ] 도메인 연결 (Vercel), Supabase URL Configuration·카카오·`WEB_ORIGIN`을 최종 도메인으로 갱신
 7. [ ] 아래 7번 점검
