@@ -1,132 +1,79 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# place-board-server
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+장소 메모판 API 서버. NestJS 12 (ESM), TypeScript, Vitest, oxlint.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+외부 API 키(Anthropic, NAVER)와 Supabase service role 키를 갖고, 검색 파이프라인·글쓰기·AI 요약·신고·차단·만료 데이터 정리를 맡는다. 설계는 [`../PLACE_BOARD_DESIGN.md`](../PLACE_BOARD_DESIGN.md).
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## 실행
 
 ```bash
-$ npm install
+cp .env.example .env   # 아래 환경 변수 채우기
+npm install
+npm run start:dev      # http://localhost:4000 (코드를 바꾸면 자동 재시작)
 ```
 
-## Compile and run the project
+## 환경 변수
 
-```bash
-# development
-$ npm run start
+| 이름 | 값 |
+| --- | --- |
+| `PORT` | 기본 `4000` |
+| `WEB_ORIGIN` | CORS 허용 출처 (프론트 주소, 예: `http://localhost:5173`) |
+| `ANTHROPIC_API_KEY` | Claude API 키. 이 서비스 전용 워크스페이스와 지출 한도를 걸어두는 것을 권장 |
+| `CLAUDE_MODEL` | 기본 `claude-sonnet-5-5` |
+| `NAVER_CLIENT_ID` | NAVER API HUB Client ID → `X-NCP-APIGW-API-KEY-ID` 헤더 |
+| `NAVER_CLIENT_SECRET` | NAVER API HUB Client Secret → `X-NCP-APIGW-API-KEY` 헤더 |
+| `SUPABASE_URL` | Supabase Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase secret 키 (`sb_secret_...`). RLS를 우회하므로 서버에만 둔다 |
 
-# watch mode
-$ npm run start:dev
+## API
 
-# production mode
-$ npm run start:prod
+모든 API는 `Authorization: Bearer <Supabase access token>`이 필요하다 (전역 `AuthGuard`). 없거나 만료되면 401.
+
+| 메서드·경로 | 내용 |
+| --- | --- |
+| `POST /search` | 검색어(2~100자) → 장소 카드 + 확인 안 된 후기. 24시간 20회 제한(429 `USER_LIMIT`), 진행 중 중복 검색 차단(429 `IN_PROGRESS`), 네이버 한도 초과 503 `NAVER_QUOTA` |
+| `POST /places/:placeKey/posts` | 글쓰기 (300자, 정해진 태그, 본인 폴더 사진, 3시간 지난 사진 거부). 3초 연속 전송 429 `TOO_FAST`. 저장 후 비공개 채널 `place:{key}`로 알림 Broadcast |
+| `GET /places/:placeKey/summary` | AI 현장 요약 (최근 6시간 글 → 40자 한 줄, `place_summaries` 캐시). 글이 없으면 `summary: null` |
+| `POST /posts/:postId/report` | 신고 (`spam`·`abuse`·`privacy`·`etc`). 3명이 신고하면 모두에게 숨김. 204 |
+| `POST /posts/:postId/block-author` | 그 글 작성자를 차단 (모든 장소에서 나에게 숨김). 204 |
+
+응답과 Broadcast에 작성자 `user_id`는 절대 포함하지 않는다.
+
+## 정리 작업
+
+`CleanupService`가 매시간 정각에 돈다 (`@nestjs/schedule`).
+
+1. 24시간 지난 글: Storage 사진을 먼저 지우고 글을 지운다.
+2. 6시간 지난 채팅을 지운다.
+3. 24시간 지난 검색 기록을 지운다.
+
+## 명령어
+
+| 명령 | 내용 |
+| --- | --- |
+| `npm run start:dev` | 개발 서버 (watch) |
+| `npm run build` | `dist/`로 빌드 |
+| `npm run start:prod` | `node dist/main` |
+| `npm test` | 단위 테스트 (장소 키·텍스트 정규화, 글 입력 검증·닉네임, 요약 재생성 규칙, 인증 가드) |
+| `npm run test:e2e` | 토큰 없이 요청하면 401인지 |
+| `npm run lint` | oxlint |
+
+## 구조
+
+```
+src/
+├── main.ts                  CORS(WEB_ORIGIN), PORT
+├── app.module.ts            전역 AuthGuard, 컨트롤러·서비스 등록
+├── auth.guard.ts            Supabase 토큰 검증, @CurrentUser()
+├── supabase.ts              service role 클라이언트
+├── cleanup.service.ts       매시간 정리 작업
+├── search/                  검색 파이프라인 (NaverService, ClaudeService, SearchService, 텍스트 정규화)
+├── posts/                   글쓰기, 입력 검증, 방별 닉네임
+├── summary/                 AI 현장 요약, 재생성 규칙
+└── moderation/              신고·차단
 ```
 
-## Run tests
+## 알아 둘 점
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-To add it to this project, run this and approve the code it prints at [observe.nestjs.com/link](https://observe.nestjs.com/link) - signing up for free if you have no account:
-
-```bash
-$ npx @nestjs/observe link
-```
-
-It installs `@nestjs/observe`, wires it into `AppModule` and `main.ts`, and writes the app key and secret into `.env`, which every `nest start` script (`start`, `start:dev`, `start:debug`) then loads. In production, set `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment instead.
-
-Or do it by hand:
-
-```bash
-$ npm install @nestjs/observe
-```
-
-Then follow the [setup guide](https://docs.nestjs.com/observability/sdk) - it takes a single import and an app key.
-
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **서버는 한 대만 띄운다.** 초당 네이버 호출 제한, 같은 사용자 동시 검색 차단, 요약 동시 요청 합치기를 프로세스 메모리로 처리한다. 여러 대로 늘리려면 Redis 같은 공유 저장소로 바꿔야 한다 (코드의 `ponytail:` 주석 참고).
+- **NestJS ESM:** 상대 import는 `.js`로 끝난다. Nest 관련 안내는 `AGENTS.md`.

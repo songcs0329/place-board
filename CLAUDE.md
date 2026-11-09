@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-장소 메모판 모노레포. 설계는 `place-board-design.md`, 프론트는 `place-board-front/`(CLAUDE.md 참고), 백엔드는 `place-board-server/`(AGENTS.md 참고).
+장소 메모판 모노레포. 설계는 `PLACE_BOARD_DESIGN.md`, 프론트는 `place-board-front/`(CLAUDE.md 참고), 백엔드는 `place-board-server/`(AGENTS.md 참고).
 
 ## 코드 규칙 (front, server 공통)
 

@@ -15,7 +15,7 @@ npm run preview   # 프로덕션 빌드 미리보기
 
 ## 아키텍처
 
-장소 메모판 프론트엔드 (Vite + React SPA). 설계는 `../place-board-design.md`를 따른다. 백엔드(NestJS) 호출은 `restClient`/`apiManager`, Supabase 읽기·Realtime·Presence·로그인·Storage는 `src/libs/supabase.ts` 클라이언트로 직접 한다.
+장소 메모판 프론트엔드 (Vite + React SPA). 설계는 `../PLACE_BOARD_DESIGN.md`를 따른다. 백엔드(NestJS) 호출은 `restClient`/`apiManager`, Supabase 읽기·Realtime·Presence·로그인·Storage는 `src/libs/supabase.ts` 클라이언트로 직접 한다.
 
 ### 진입점
 
