@@ -2,14 +2,15 @@ import { BadRequestException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 
 // 빠른 태그 (설계 6장). 프론트 src/libs/tags.ts와 같은 목록
-export const TAGS = [
-  'seat:free',
-  'seat:normal',
-  'seat:full',
-  'parking:free',
-  'parking:wait',
-  'waiting:yes',
-];
+export const TAG_LABELS: Record<string, string> = {
+  'seat:free': '자리 여유',
+  'seat:normal': '자리 보통',
+  'seat:full': '만석',
+  'parking:free': '주차 여유',
+  'parking:wait': '주차 대기',
+  'waiting:yes': '웨이팅 있음',
+};
+export const TAGS = Object.keys(TAG_LABELS);
 
 const HOUR = 3600_000;
 // 프론트가 올리는 경로: {userId}/{uuid}.webp|jpg (설계 7장)

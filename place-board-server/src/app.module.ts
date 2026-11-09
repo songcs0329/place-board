@@ -9,11 +9,12 @@ import { ClaudeService } from './search/claude.service.js';
 import { NaverService } from './search/naver.service.js';
 import { SearchController } from './search/search.controller.js';
 import { SearchService } from './search/search.service.js';
+import { SummaryController } from './summary/summary.controller.js';
 import { supabaseProvider } from './supabase.js';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), ScheduleModule.forRoot()],
-  controllers: [SearchController, PostsController],
+  controllers: [SearchController, PostsController, SummaryController],
   providers: [
     supabaseProvider,
     { provide: APP_GUARD, useClass: AuthGuard },

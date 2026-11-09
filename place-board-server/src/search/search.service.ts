@@ -143,13 +143,11 @@ export class SearchService {
       (a, b) => b.blogs.length - a.blogs.length,
     );
 
-    const { error } = await this.db
-      .from('search_sessions')
-      .insert({
-        user_id: userId,
-        query,
-        place_keys: places.map((p) => p.placeKey),
-      });
+    const { error } = await this.db.from('search_sessions').insert({
+      user_id: userId,
+      query,
+      place_keys: places.map((p) => p.placeKey),
+    });
     if (error) throw error;
 
     return { query, places, unmatched };
