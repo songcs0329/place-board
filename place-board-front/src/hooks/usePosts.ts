@@ -40,14 +40,14 @@ export function usePlaceChannel(placeKey: string) {
   const [viewers, setViewers] = useState(0);
 
   useEffect(() => {
+    // 비공개 채널: 로그인 사용자만 받고, 새 글은 서버만 보낼 수 있다 (Realtime 정책, 설계 11장)
     // Presence 키는 다른 사람에게 보이므로 사용자 ID 대신 탭마다 임의 값
-    const channel = supabase.channel(`place:${placeKey}`, { config: { presence: { key: crypto.randomUUID() } } });
+    const channel = supabase.channel(`place:${placeKey}`, {
+      config: { private: true, presence: { key: crypto.randomUUID() } },
+    });
     channel
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'place_posts', filter: `place_key=eq.${placeKey}` },
-        (payload) => addPost(queryClient, placeKey, payload.new as Db.Post),
-      )
+      // 서버가 글 저장 후 user_id를 뺀 글을 보낸다
+      .on('broadcast', { event: 'post' }, ({ payload }) => addPost(queryClient, placeKey, payload as Db.Post))
       .on('presence', { event: 'sync' }, () => setViewers(Object.keys(channel.presenceState()).length))
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') void channel.track({});

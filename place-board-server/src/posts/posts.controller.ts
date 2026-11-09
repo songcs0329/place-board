@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -12,8 +13,14 @@ import { SupabaseClient, type User } from '@supabase/supabase-js';
 import { CurrentUser } from '../auth.guard.js';
 import { makeNickname, parsePost } from './post-input.js';
 
+// 응답·Broadcast로 내보내는 컬럼: user_id는 절대 내보내지 않는다 (설계 9장)
+const PUBLIC_POST_COLUMNS =
+  'id, place_key, nickname, body, tags, images, photo_taken_at, kind, created_at';
+
 @Controller('places/:placeKey/posts')
 export class PostsController {
+  private readonly logger = new Logger(PostsController.name);
+
   constructor(
     @Inject(SupabaseClient) private readonly supabase: SupabaseClient,
   ) {}
@@ -66,9 +73,27 @@ export class PostsController {
         images,
         photo_taken_at: photoTakenAt,
       })
-      .select()
+      .select(PUBLIC_POST_COLUMNS)
       .single();
     if (error) throw error;
+
+    await this.broadcast(placeKey, data);
     return data;
+  }
+
+  // 새 글 실시간 전송 (설계 11장): user_id를 뺀 글을 비공개 채널 place:{key}로.
+  // 받는 쪽은 Realtime 정책으로 로그인 사용자만, 보내는 쪽은 서버(service role)만
+  // 전송이 실패해도 글은 이미 저장됐으므로 요청은 성공시키고, 화면은 다음 조회 때 맞춰진다
+  private async broadcast(placeKey: string, post: unknown) {
+    const channel = this.supabase.channel(`place:${placeKey}`, {
+      config: { private: true },
+    });
+    try {
+      const result = await channel.httpSend('post', post);
+      if (!result.success)
+        this.logger.warn(`broadcast 실패 ${result.status} ${result.error}`);
+    } finally {
+      await this.supabase.removeChannel(channel);
+    }
   }
 }

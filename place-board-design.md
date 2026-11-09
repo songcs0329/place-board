@@ -341,7 +341,12 @@ create table public.search_sessions (
 
 anon 역할에는 테이블 권한을 주지 않는다. 마이그레이션은 `supabase/migrations/`에 둔다.
 
-프론트는 `place_posts.user_id`를 읽지 않는다(필요한 컬럼만 select). user_id가 보이면 방마다 닉네임을 바꿔도 같은 사람의 글을 방을 넘나들며 이을 수 있다. Presence 키도 사용자 ID 대신 탭마다 임의 값을 쓴다. 다만 RLS는 행 단위라 마음먹고 `user_id`를 select하거나 Realtime 페이로드를 보면 여전히 보인다. 공개 전에 막는다 (15장).
+`place_posts.user_id`는 작성자 본인을 포함해 아무도 읽을 수 없다. user_id가 보이면 방마다 닉네임을 바꿔도 같은 사람의 글을 방을 넘나들며 이을 수 있기 때문이다 (`20261109020000_hide_post_user_id.sql`).
+
+- 읽기 권한을 컬럼 단위로 준다: authenticated는 user_id를 뺀 컬럼만 select할 수 있다. `select(*)`는 권한 오류가 나므로 컬럼을 적어서 읽는다.
+- `place_posts`를 Realtime publication에서 뺀다. `postgres_changes`는 행 전체(user_id 포함)를 보내기 때문이다. 새 글은 11장의 Broadcast로 전한다.
+- 글쓰기 응답과 Broadcast도 user_id를 뺀 컬럼만 내보낸다.
+- Presence 키도 사용자 ID 대신 탭마다 임의 값을 쓴다.
 
 ```sql
 create policy "recent posts readable" on public.place_posts
@@ -355,7 +360,7 @@ create policy "upload to own folder" on storage.objects
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
-alter publication supabase_realtime add table public.place_posts;
+-- place_posts는 publication에 넣지 않는다 (user_id 노출). 새 글은 Broadcast로 (11장)
 ```
 
 ## 10. API
@@ -441,11 +446,11 @@ alter publication supabase_realtime add table public.place_posts;
 
 | 용도 | 방식 |
 | --- | --- |
-| 장소 게시판 새 글 | `postgres_changes` INSERT, `place_key=eq.{key}` |
-| 실시간 게시판 탭 새 메모 | `postgres_changes` INSERT, `place_key=in.(k1,k2,...)`, 받은 뒤 `kind = 'memo'`만 표시 |
+| 장소 게시판 새 글 | 비공개 채널 `place:{key}`의 Broadcast `post` 이벤트. 백엔드가 글 저장 후 user_id를 뺀 글을 보낸다 |
+| 실시간 게시판 탭 새 메모 | 검색한 장소마다 같은 `place:{key}` 채널을 구독하고, 받은 뒤 `kind = 'memo'`만 표시 |
 | 보는 사람 수 | Presence, 채널 `place:{key}` |
 
-`in` 필터는 값 100개까지 받으므로 검색 3개 분량(보통 20~30곳)이면 충분하다. 새 검색을 하면 구독 대상 목록만 바꾼다.
+채널 권한은 Realtime Authorization(`realtime.messages` RLS)으로 건다. 로그인 사용자는 `place:*` 채널의 broadcast·presence를 받고 presence만 보낼 수 있다. broadcast를 보내는 정책은 없어서 백엔드(service role)만 글을 보낼 수 있고, 누군가 가짜 글을 채널에 흘리지 못한다. 실시간 게시판 탭은 검색 3개 × 최대 15곳이라 채널이 많아야 45개로, 클라이언트당 채널 한도(100) 안쪽이다. Broadcast 전송이 실패해도 글은 저장됐으므로 요청은 성공시키고, 화면은 다음 조회 때 맞춰진다.
 
 ## 12. 정리 작업 (백엔드 매시간)
 
@@ -491,7 +496,6 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 15. 다음 단계
 
-- **user_id 노출 막기 (공개 전 필수):** 컬럼 권한으로 `user_id`를 select에서 빼고, Realtime은 `postgres_changes` 대신 백엔드가 글 저장 후 Broadcast로 보내는 방식으로 바꾼다. postgres_changes 페이로드는 행 전체를 보낸다.
 - 신고·차단: 메시지 단위 신고, 사용자 차단 목록. 실제 사용자가 생기면 가장 먼저 필요하다.
 - 업주 홍보 글 규칙 또는 업주 공식 계정
 - Claude 비전으로 사진 보고 태그 추천 + 부적절 이미지 1차 필터

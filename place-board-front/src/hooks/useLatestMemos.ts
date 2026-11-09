@@ -33,33 +33,31 @@ export function useLatestMemos(placeKeys: string[]) {
   });
 }
 
-// 새 메모 실시간 반영 (설계 11장: place_key=in.(...), 받은 뒤 memo만)
+// 새 메모 실시간 반영 (설계 11장): 장소마다 비공개 채널 place:{key}의 Broadcast를 받고, 메모만 반영
+// 검색 3개 × 최대 15곳이라 채널은 많아야 45개 (Supabase 클라이언트당 채널 한도 100 안쪽)
 export function useMemoFeed(placeKeys: string[]) {
   const queryClient = useQueryClient();
-  const filterKeys = placeKeys.join(',');
+  const joinedKeys = placeKeys.join(',');
 
   useEffect(() => {
-    if (!filterKeys) return;
-    const keys = filterKeys.split(',');
-    const channel = supabase
-      .channel(`memo-feed:${crypto.randomUUID()}`)
-      .on(
-        'postgres_changes',
-        // in 필터는 값 100개까지: 검색 3개 × 최대 15곳이라 충분
-        { event: 'INSERT', schema: 'public', table: 'place_posts', filter: `place_key=in.(${filterKeys})` },
-        (payload) => {
-          const post = payload.new as Db.Post;
-          if (post.kind !== 'memo') return;
-          const { body, tags, images, created_at } = post;
-          queryClient.setQueryData<Record<string, LatestMemo>>(latestMemosKey(keys), (previous = {}) => ({
-            ...previous,
-            [post.place_key]: { body, tags, images, created_at, photo: images[0] ?? previous[post.place_key]?.photo },
-          }));
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
+    if (!joinedKeys) return;
+    const keys = joinedKeys.split(',');
+    const onPost = ({ payload }: { payload: Db.Post }) => {
+      if (payload.kind !== 'memo') return;
+      const { body, tags, images, created_at } = payload;
+      queryClient.setQueryData<Record<string, LatestMemo>>(latestMemosKey(keys), (previous = {}) => ({
+        ...previous,
+        [payload.place_key]: { body, tags, images, created_at, photo: images[0] ?? previous[payload.place_key]?.photo },
+      }));
     };
-  }, [filterKeys, queryClient]);
+    const channels = keys.map((placeKey) =>
+      supabase
+        .channel(`place:${placeKey}`, { config: { private: true } })
+        .on('broadcast', { event: 'post' }, (message) => onPost({ payload: message.payload as Db.Post }))
+        .subscribe(),
+    );
+    return () => {
+      for (const channel of channels) void supabase.removeChannel(channel);
+    };
+  }, [joinedKeys, queryClient]);
 }
