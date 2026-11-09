@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthGuard } from './auth.guard.js';
 import { ModerationController } from './moderation/moderation.controller.js';
 import { CleanupService } from './cleanup.service.js';
+import { HealthController } from './health.controller.js';
 import { PostsController } from './posts/posts.controller.js';
 import { ClaudeService } from './search/claude.service.js';
 import { NaverService } from './search/naver.service.js';
@@ -20,6 +21,7 @@ import { supabaseProvider } from './supabase.js';
     PostsController,
     SummaryController,
     ModerationController,
+    HealthController,
   ],
   providers: [
     supabaseProvider,

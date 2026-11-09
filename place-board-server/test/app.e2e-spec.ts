@@ -5,25 +5,31 @@ import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 
 describe('AuthGuard (e2e)', () => {
-  let app: INestApplication<App>;
+  let application: INestApplication<App>;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    application = moduleFixture.createNestApplication();
+    await application.init();
   });
 
   it('토큰 없이 POST /search → 401', () => {
-    return request(app.getHttpServer())
+    return request(application.getHttpServer())
       .post('/search')
       .send({ query: '카페' })
       .expect(401);
   });
 
+  it('GET /health는 토큰 없이 200', () => {
+    return request(application.getHttpServer())
+      .get('/health')
+      .expect(200, { status: 'ok' });
+  });
+
   afterEach(async () => {
-    await app.close();
+    await application.close();
   });
 });
