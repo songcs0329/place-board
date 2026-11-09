@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import BlogList from '@/components/BlogList';
 import PlaceCard from '@/components/PlaceCard';
+import { useLatestMemos } from '@/hooks/useLatestMemos';
 import { useSearch } from '@/hooks/useSearch';
 import { supabase } from '@/libs/supabase';
 import storageUtils from '@/libs/utils/storageUtils';
@@ -26,6 +27,7 @@ function Search() {
   const [result, setResult] = useState(() => storageUtils.getSessionStorage<ApiResponse.Search>(RESULT_KEY));
   const [query, setQuery] = useState(result?.query ?? '');
   const search = useSearch();
+  const memos = useLatestMemos(result?.places.map((p) => p.placeKey) ?? []);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +99,7 @@ function Search() {
             )}
 
             {result.places.map((p) => (
-              <PlaceCard key={p.placeKey} place={p} />
+              <PlaceCard key={p.placeKey} place={p} memo={memos.data?.[p.placeKey]} />
             ))}
 
             {result.unmatched.length > 0 && (

@@ -36,7 +36,7 @@ declare namespace ApiResponse {
 
   // 4xx/5xx 응답 본문
   interface Error {
-    code?: 'USER_LIMIT' | 'IN_PROGRESS' | 'NAVER_QUOTA';
+    code?: 'USER_LIMIT' | 'IN_PROGRESS' | 'NAVER_QUOTA' | 'TOO_FAST';
     message?: string | string[];
   }
 }

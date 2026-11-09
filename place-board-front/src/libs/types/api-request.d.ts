@@ -1,1 +1,6 @@
-declare namespace ApiRequest {}
+declare namespace ApiRequest {
+  interface CreatePost {
+    body?: string;
+    tags: string[];
+  }
+}

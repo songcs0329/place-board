@@ -339,6 +339,8 @@ create table public.search_sessions (
 
 anon 역할에는 테이블 권한을 주지 않는다. 마이그레이션은 `supabase/migrations/`에 둔다.
 
+프론트는 `place_posts.user_id`를 읽지 않는다(필요한 컬럼만 select). user_id가 보이면 방마다 닉네임을 바꿔도 같은 사람의 글을 방을 넘나들며 이을 수 있다. Presence 키도 사용자 ID 대신 탭마다 임의 값을 쓴다. 다만 RLS는 행 단위라 마음먹고 `user_id`를 select하거나 Realtime 페이로드를 보면 여전히 보인다. 공개 전에 막는다 (15장).
+
 ```sql
 create policy "recent posts readable" on public.place_posts
   for select to authenticated
@@ -423,7 +425,7 @@ alter publication supabase_realtime add table public.place_posts;
 | 300자 초과, 알 수 없는 태그, 남의 폴더 사진 경로, 내용 없음 | 400 |
 | 로그인 없음 또는 만료 | 401 |
 | 없는 장소 | 404 |
-| 3초 안에 연속 전송 | 429 |
+| 3초 안에 연속 전송 (모든 방 합산) | 429 `{ "code": "TOO_FAST" }` |
 
 ### `GET /places/:placeKey/summary`
 
@@ -485,6 +487,7 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 15. 다음 단계
 
+- **user_id 노출 막기 (공개 전 필수):** 컬럼 권한으로 `user_id`를 select에서 빼고, Realtime은 `postgres_changes` 대신 백엔드가 글 저장 후 Broadcast로 보내는 방식으로 바꾼다. postgres_changes 페이로드는 행 전체를 보낸다.
 - 신고·차단: 메시지 단위 신고, 사용자 차단 목록. 실제 사용자가 생기면 가장 먼저 필요하다.
 - 업주 홍보 글 규칙 또는 업주 공식 계정
 - Claude 비전으로 사진 보고 태그 추천 + 부적절 이미지 1차 필터
