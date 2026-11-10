@@ -3,11 +3,9 @@ import { isAxiosError } from 'axios';
 import BlogList from '@/components/search/BlogList';
 import PlaceCard from '@/components/search/PlaceCard';
 import { useLatestMemos } from '@/hooks/useLatestMemos';
-import { useSearch } from '@/hooks/useSearch';
+import { LAST_SEARCH_KEY, useLatestSearchState, useSearch } from '@/hooks/useSearch';
 import { supabase } from '@/libs/supabase';
 import storageUtils from '@/libs/utils/storageUtils';
-
-const RESULT_KEY = 'lastSearch';
 
 const errorMessage = (error: unknown) => {
   const data = isAxiosError<ApiResponse.Error>(error) ? error.response?.data : undefined;
@@ -23,20 +21,18 @@ const errorMessage = (error: unknown) => {
 };
 
 function Search() {
-  // 탭을 오가도 마지막 결과 유지 (설계 4.1)
-  const [result, setResult] = useState(() => storageUtils.getSessionStorage<ApiResponse.Search>(RESULT_KEY));
-  const [query, setQuery] = useState(result?.query ?? '');
   const search = useSearch();
+  // 검색 화면을 떠났다 돌아와도 진행 중, 실패, 새 결과를 이어서 보여준다 (설계 4.1)
+  const latest = useLatestSearchState();
+  const isSearching = latest?.status === 'pending';
+  const [storedResult] = useState(() => storageUtils.getSessionStorage<ApiResponse.Search>(LAST_SEARCH_KEY));
+  const result = latest?.status === 'success' ? latest.data : storedResult;
+  const [query, setQuery] = useState(() => (isSearching ? latest.variables : result?.query) ?? '');
   const memos = useLatestMemos(result?.places.map((place) => place.placeKey) ?? []);
 
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    search.mutate(query.trim(), {
-      onSuccess: (data) => {
-        setResult(data);
-        storageUtils.setSessionStorage(RESULT_KEY, data);
-      },
-    });
+    search.mutate(query.trim());
   };
 
   return (
@@ -65,7 +61,7 @@ function Search() {
           />
           <button
             type="submit"
-            disabled={search.isPending}
+            disabled={isSearching}
             className="h-11 shrink-0 rounded-xl bg-[#111] px-4 text-sm font-bold text-white disabled:bg-neutral-300"
           >
             검색
@@ -74,7 +70,7 @@ function Search() {
       </header>
 
       <main className="mx-auto flex w-full max-w-xl flex-col gap-3 p-4">
-        {search.isPending && (
+        {isSearching && (
           <p role="status" className="py-10 text-center text-sm text-neutral-600">
             블로그 후기에서 장소를 찾고 있어요
             <br />
@@ -82,13 +78,13 @@ function Search() {
           </p>
         )}
 
-        {search.isError && (
+        {latest?.status === 'error' && (
           <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
-            {errorMessage(search.error)}
+            {errorMessage(latest.error)}
           </p>
         )}
 
-        {!search.isPending && result && (
+        {!isSearching && result && (
           <>
             {result.places.length === 0 && result.unmatched.length === 0 ? (
               <p className="py-10 text-center text-sm text-neutral-600">

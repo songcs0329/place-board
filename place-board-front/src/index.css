@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* iOS는 글자 크기가 16px보다 작은 입력창을 터치하면 화면을 확대한다. 터치 기기에서만 16px로 맞춰 막는다 */
+/* 레이어 밖 규칙이라 Tailwind 유틸리티(text-sm 등)보다 우선한다 */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
