@@ -14,6 +14,9 @@ export function useLatestMemos(placeKeys: string[]) {
   return useQuery({
     queryKey: latestMemosKey(placeKeys),
     enabled: placeKeys.length > 0,
+    // 실시간 구독은 이 화면이 떠 있을 때만 받는다. 게시판에 다녀오는 동안 생긴 메모(내 글 포함)를
+    // 놓치지 않도록 화면에 들어올 때마다 다시 조회한다 (기본 staleTime 60초면 캐시를 그대로 씀)
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('place_posts')
