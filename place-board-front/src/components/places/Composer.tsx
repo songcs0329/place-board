@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { isAxiosError } from 'axios';
+import PlaceLoader from '@/components/commons/PlaceLoader';
 import { useCreatePost } from '@/hooks/useCreatePost';
 import { PhotoError, processPhoto, type ProcessedPhoto } from '@/libs/photo';
 import { TAGS } from '@/libs/tags';
@@ -149,6 +151,16 @@ function Composer({ placeKey }: { placeKey: string }) {
           {create.isPending && photo ? '올리는 중' : '보내기'}
         </button>
       </div>
+      {/* 사진 업로드처럼 오래 걸릴 때만 보여준다. 글만 보낼 땐 금방 끝나 깜빡이기만 한다 */}
+      {/* sticky 폼은 자체 쌓임 맥락이라 z-index가 갇힌다. body로 꺼내야 헤더 등 모든 레이어 위에 뜬다 */}
+      {create.isPending &&
+        photo &&
+        createPortal(
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+            <PlaceLoader />
+          </div>,
+          document.body,
+        )}
       <span className={cn('text-[11px]', error ? 'text-red-700' : 'text-neutral-500')} role="status">
         {error ??
           (photo

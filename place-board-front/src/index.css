@@ -9,3 +9,25 @@
     font-size: 16px;
   }
 }
+
+@theme {
+  --animate-place-bounce: place-bounce 0.9s ease-in-out infinite;
+  @keyframes place-bounce {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+    30% {
+      transform: translateY(-6px);
+      opacity: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-place-bounce {
+    animation: none;
+  }
+}
