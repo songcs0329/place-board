@@ -63,7 +63,7 @@ function PlaceCard({ place, memo }: Props) {
       <BlogList blogs={place.blogs} />
       <Link
         to={to}
-        className="flex h-11 items-center justify-center rounded-xl bg-neutral-200 text-sm font-bold text-neutral-900 hover:bg-neutral-300"
+        className="flex h-11 items-center justify-center rounded-xl border border-brand text-sm font-bold text-brand hover:bg-orange-50"
       >
         게시판 보기
       </Link>

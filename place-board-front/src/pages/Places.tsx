@@ -33,7 +33,7 @@ function Places() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-50 px-4 text-sm">
         <p>{place.isError ? '장소를 불러오지 못했어요.' : '장소를 찾을 수 없어요.'}</p>
-        <Link to="/search" className="font-medium text-[#111]">
+        <Link to="/search" className="font-medium text-brand">
           검색으로 돌아가기
         </Link>
       </main>
@@ -90,8 +90,8 @@ function Places() {
 
         {/* AI 현장 요약: 글이 없거나 요약 실패면 띄우지 않는다 (설계 6장) */}
         {summary.data?.summary && (
-          <div className="flex items-start gap-2.5 rounded-2xl bg-[#111] px-3.5 py-3 text-white" role="status">
-            <span className="shrink-0 rounded-md bg-white px-1.5 py-px text-[11px] font-bold text-[#111]">AI 요약</span>
+          <div className="flex items-start gap-2.5 rounded-2xl bg-brand px-3.5 py-3 text-white" role="status">
+            <span className="shrink-0 rounded-md bg-white px-1.5 py-px text-[11px] font-bold text-brand">AI 요약</span>
             <p className="text-sm">{summary.data.summary}</p>
           </div>
         )}
@@ -132,7 +132,7 @@ function Places() {
             </h2>
             {viewers >= 2 && (
               <span className="flex items-center gap-1.5 text-xs text-neutral-800">
-                <span aria-hidden="true" className="size-2 rounded-full bg-neutral-900" />
+                <span aria-hidden="true" className="size-2 rounded-full bg-brand" />
                 지금 {viewers}명이 보고 있어요
               </span>
             )}

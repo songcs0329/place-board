@@ -65,7 +65,7 @@ function Search() {
           <button
             type="submit"
             disabled={isSearching}
-            className="h-11 shrink-0 rounded-xl bg-[#111] px-4 text-sm font-bold text-white disabled:bg-neutral-300"
+            className="h-11 shrink-0 rounded-xl bg-brand px-4 text-sm font-bold text-white disabled:bg-neutral-300"
           >
             검색
           </button>

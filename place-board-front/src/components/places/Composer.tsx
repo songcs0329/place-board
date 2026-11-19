@@ -114,7 +114,7 @@ function Composer({ placeKey }: { placeKey: string }) {
           aria-label="사진 첨부"
           className={cn(
             'flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border',
-            photo ? 'border-[#111] bg-neutral-100 text-[#111]' : 'border-neutral-300 bg-white text-neutral-600',
+            photo ? 'border-brand bg-neutral-100 text-brand' : 'border-neutral-300 bg-white text-neutral-600',
           )}
         >
           <svg
@@ -146,7 +146,7 @@ function Composer({ placeKey }: { placeKey: string }) {
         <button
           type="submit"
           disabled={create.isPending || !canSend}
-          className="h-11 shrink-0 rounded-xl bg-[#111] px-4 text-sm font-bold text-white disabled:bg-neutral-300"
+          className="h-11 shrink-0 rounded-xl bg-brand px-4 text-sm font-bold text-white disabled:bg-neutral-300"
         >
           {create.isPending && photo ? '올리는 중' : '보내기'}
         </button>

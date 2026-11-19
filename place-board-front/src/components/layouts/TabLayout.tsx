@@ -4,7 +4,7 @@ import { cn } from '@/libs/utils/cn';
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   cn(
     'flex min-h-13 items-center justify-center text-sm',
-    isActive ? 'font-bold text-neutral-900 shadow-[inset_0_3px_0_#111]' : 'font-medium text-neutral-500',
+    isActive ? 'font-bold text-neutral-900 shadow-[inset_0_3px_0_var(--color-brand)]' : 'font-medium text-neutral-500',
   );
 
 // 검색 결과 / 실시간 게시판 탭 (설계 4장)

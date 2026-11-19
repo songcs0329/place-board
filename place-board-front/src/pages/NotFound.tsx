@@ -11,7 +11,7 @@ function NotFound() {
         <p className="mt-3 text-sm leading-6 text-neutral-600">요청한 주소가 잘못되었거나 사라진 페이지예요.</p>
         <Link
           to="/search"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-[#111] px-5 text-sm font-semibold text-white transition hover:bg-black"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-brand px-5 text-sm font-semibold text-white transition hover:brightness-95"
         >
           홈으로 돌아가기
         </Link>
