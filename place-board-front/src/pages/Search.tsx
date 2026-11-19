@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
+import Logo from '@/components/commons/Logo';
 import PlaceLoader from '@/components/commons/PlaceLoader';
 import BlogList from '@/components/search/BlogList';
 import PlaceCard from '@/components/search/PlaceCard';
@@ -41,7 +42,7 @@ function Search() {
     <div className="flex flex-col text-neutral-900">
       <header className="sticky top-0 z-10 flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold">장소 메모판</h1>
+          <Logo className="text-lg" />
           <button type="button" onClick={() => supabase.auth.signOut()} className="min-h-11 text-xs text-neutral-500">
             로그아웃
           </button>
