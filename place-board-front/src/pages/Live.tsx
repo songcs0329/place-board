@@ -42,7 +42,7 @@ function Live() {
           <p className="py-10 text-center text-sm text-neutral-600">
             {keys.length === 0 ? '최근 24시간 검색이 없어요.' : '검색한 장소에 아직 현장 소식이 없어요.'}
             <br />
-            <Link to="/search" className="font-medium text-neutral-900 underline">
+            <Link to="/search" className="font-medium text-brand underline">
               검색 결과
             </Link>
             에서 장소 게시판에 첫 소식을 남겨보세요.

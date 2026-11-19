@@ -26,7 +26,7 @@ function BlogList({ blogs }: { blogs: ApiResponse.Blog[] }) {
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="min-h-11 self-start text-[13px] font-medium text-[#111]"
+          className="min-h-11 self-start text-[13px] font-medium text-brand"
         >
           {open ? '접기' : `더보기 (${blogs.length - PREVIEW}건)`}
         </button>

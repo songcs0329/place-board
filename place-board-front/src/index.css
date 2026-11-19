@@ -11,6 +11,8 @@
 }
 
 @theme {
+  /* 브랜드 주황 */
+  --color-brand: #ffa200;
   --animate-place-bounce: place-bounce 0.9s ease-in-out infinite;
   @keyframes place-bounce {
     0%,
@@ -30,4 +32,24 @@
   .animate-place-bounce {
     animation: none;
   }
+}
+
+/* 입력창 포커스 하이라이트를 브랜드 주황으로 */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -1px;
+  border-color: var(--color-brand);
+}
+
+/* 검색창의 지우기(x) 버튼. 기본 아이콘은 색을 못 바꿔서 주황 x로 교체 (data URI라 var() 대신 #ffa200을 직접 쓴다) */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffa200' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }

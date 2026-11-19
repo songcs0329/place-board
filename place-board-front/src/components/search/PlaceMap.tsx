@@ -38,7 +38,7 @@ function PlaceMap({ lat, lng, name, category }: Props) {
           map,
           icon: {
             // 카테고리 아이콘이 든 둥근 핀. 꼬리 끝이 좌표에 닿도록 anchor를 아래 가운데로 잡는다
-            content: `<div style="position:relative;width:36px;height:44px"><div style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#111;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">${renderToStaticMarkup(<CategoryIcon />)}</div><div style="position:absolute;left:12px;top:35px;border:6px solid transparent;border-top-color:#111;border-bottom:0"></div></div>`,
+            content: `<div style="position:relative;width:36px;height:44px"><div style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--color-brand);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">${renderToStaticMarkup(<CategoryIcon />)}</div><div style="position:absolute;left:12px;top:35px;border:6px solid transparent;border-top-color:var(--color-brand);border-bottom:0"></div></div>`,
             anchor: new maps.Point(18, 42),
           },
         });
@@ -55,7 +55,7 @@ function PlaceMap({ lat, lng, name, category }: Props) {
       ref={container}
       role="img"
       aria-label={`${name} 위치 지도`}
-      className="h-32 w-full rounded-xl bg-neutral-100"
+      className="isolate h-32 w-full rounded-xl bg-neutral-100"
     />
   );
 }
