@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
+import PlaceLoader from '@/components/commons/PlaceLoader';
 import BlogList from '@/components/search/BlogList';
 import PlaceCard from '@/components/search/PlaceCard';
 import { useLatestMemos } from '@/hooks/useLatestMemos';
@@ -24,10 +25,11 @@ function Search() {
   const search = useSearch();
   // 검색 화면을 떠났다 돌아와도 진행 중, 실패, 새 결과를 이어서 보여준다 (설계 4.1)
   const latest = useLatestSearchState();
-  const isSearching = latest?.status === 'pending';
+  // 이 화면에서 보낸 요청(search.isPending)은 바로, 다른 탭에 다녀온 요청은 latest로 이어서 감지한다
+  const isSearching = search.isPending || latest?.status === 'pending';
   const [storedResult] = useState(() => storageUtils.getSessionStorage<ApiResponse.Search>(LAST_SEARCH_KEY));
   const result = latest?.status === 'success' ? latest.data : storedResult;
-  const [query, setQuery] = useState(() => (isSearching ? latest.variables : result?.query) ?? '');
+  const [query, setQuery] = useState(() => (latest?.status === 'pending' ? latest.variables : result?.query) ?? '');
   const memos = useLatestMemos(result?.places.map((place) => place.placeKey) ?? []);
 
   const onSubmit = (event: React.FormEvent) => {
@@ -71,11 +73,14 @@ function Search() {
 
       <main className="mx-auto flex w-full max-w-xl flex-col gap-3 p-4">
         {isSearching && (
-          <p role="status" className="py-10 text-center text-sm text-neutral-600">
-            블로그 후기에서 장소를 찾고 있어요
-            <br />
-            <span className="text-xs text-neutral-500">10초 정도 걸려요</span>
-          </p>
+          <div className="flex flex-col gap-4 py-10">
+            <PlaceLoader />
+            <p role="status" className="text-center text-sm text-neutral-600">
+              블로그 후기에서 장소를 찾고 있어요
+              <br />
+              <span className="text-xs text-neutral-500">10초 정도 걸려요</span>
+            </p>
+          </div>
         )}
 
         {latest?.status === 'error' && (
