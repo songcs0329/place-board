@@ -57,7 +57,9 @@ function PlaceCard({ place, memo }: Props) {
       <p className="text-sm">
         “{place.summary}” <span className="text-xs text-neutral-500">블로그 후기 기준</span>
       </p>
-      {place.lat != null && place.lng != null && <PlaceMap lat={place.lat} lng={place.lng} name={place.name} />}
+      {place.lat != null && place.lng != null && (
+        <PlaceMap lat={place.lat} lng={place.lng} name={place.name} category={place.category} />
+      )}
       <BlogList blogs={place.blogs} />
       <Link
         to={to}
