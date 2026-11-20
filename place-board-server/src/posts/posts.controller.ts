@@ -34,23 +34,24 @@ export class PostsController {
     // ponytail: imagePath가 실제로 업로드됐는지는 확인하지 않음(본인 폴더만 허용하므로 깨진 이미지는 본인 글에만 생김)
     const { body, tags, images, photoTakenAt } = parsePost(input, user.id);
 
-    const place = await this.supabase
-      .from('places')
-      .select('place_key')
-      .eq('place_key', placeKey)
-      .maybeSingle();
+    // 서로 의존하지 않는 두 조회를 동시에: 같은 사용자 3초에 1개 (모든 방 합산)
+    // ponytail: 동시에 두 요청이 오면 둘 다 통과할 수 있음. 문제 되면 DB 제약/락으로
+    const [place, last] = await Promise.all([
+      this.supabase
+        .from('places')
+        .select('place_key')
+        .eq('place_key', placeKey)
+        .maybeSingle(),
+      this.supabase
+        .from('place_posts')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
     if (place.error) throw place.error;
     if (!place.data) throw new NotFoundException('없는 장소');
-
-    // 같은 사용자 3초에 1개 (모든 방 합산)
-    // ponytail: 동시에 두 요청이 오면 둘 다 통과할 수 있음. 문제 되면 DB 제약/락으로
-    const last = await this.supabase
-      .from('place_posts')
-      .select('created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
     if (last.error) throw last.error;
     if (
       last.data &&
@@ -78,11 +79,14 @@ export class PostsController {
     if (error) throw error;
 
     // 글 내용 대신 id만 보낸다: 받는 쪽이 id로 다시 조회해야 RLS가 차단·신고한 글을 걸러준다
-    await this.broadcast(placeKey, {
+    // 전송 결과를 기다리지 않는다: 응답이 알림 왕복만큼 늦어지지 않게
+    void this.broadcast(placeKey, {
       id: data.id,
       place_key: data.place_key,
       kind: data.kind,
-    });
+    }).catch((error: unknown) =>
+      this.logger.warn(`broadcast 예외 ${String(error)}`),
+    );
     return data;
   }
 

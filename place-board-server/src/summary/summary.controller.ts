@@ -48,32 +48,33 @@ export class SummaryController {
   @Get()
   async get(@Param('placeKey') placeKey: string) {
     const now = Date.now();
-    const place = await this.supabase
-      .from('places')
-      .select('name')
-      .eq('place_key', placeKey)
-      .maybeSingle();
+    // 최근 6시간 글, 최대 50개 (최신순). 서로 의존하지 않아 세 조회를 동시에 한다
+    const [place, posts, cache] = await Promise.all([
+      this.supabase
+        .from('places')
+        .select('name')
+        .eq('place_key', placeKey)
+        .maybeSingle(),
+      this.supabase
+        .from('place_posts')
+        .select('body, tags, images, created_at')
+        .eq('place_key', placeKey)
+        .gte('created_at', new Date(now - 6 * HOUR).toISOString())
+        .order('created_at', { ascending: false })
+        .is('hidden_at', null) // 신고로 숨겨진 글은 요약에서 뺀다
+        .limit(50),
+      this.supabase
+        .from('place_summaries')
+        .select('summary, last_post_at, generated_at')
+        .eq('place_key', placeKey)
+        .maybeSingle(),
+    ]);
     if (place.error) throw place.error;
     if (!place.data) throw new NotFoundException('없는 장소');
-
-    // 최근 6시간 글, 최대 50개 (최신순)
-    const posts = await this.supabase
-      .from('place_posts')
-      .select('body, tags, images, created_at')
-      .eq('place_key', placeKey)
-      .gte('created_at', new Date(now - 6 * HOUR).toISOString())
-      .order('created_at', { ascending: false })
-      .is('hidden_at', null) // 신고로 숨겨진 글은 요약에서 뺀다
-      .limit(50);
     if (posts.error) throw posts.error;
     const rows = posts.data as PostRow[];
     if (!rows.length) return { summary: null, generatedAt: null };
 
-    const cache = await this.supabase
-      .from('place_summaries')
-      .select('summary, last_post_at, generated_at')
-      .eq('place_key', placeKey)
-      .maybeSingle();
     if (cache.error) throw cache.error;
     const cached = cache.data as CachedSummary | null;
 
